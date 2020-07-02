@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.Avalonia", "Example
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReactViewControl", "ReactViewControl\ReactViewControl.csproj", "{4FE01227-BBE0-4B87-9B11-2418F6F77512}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UIAutomation.Framework", "UIAutomation.Framework\UIAutomation.Framework.csproj", "{1EEA710A-40EF-47D8-AB22-6FD4792B195B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -174,6 +176,24 @@ Global
 		{4FE01227-BBE0-4B87-9B11-2418F6F77512}.Tests|x64.Build.0 = Debug|Any CPU
 		{4FE01227-BBE0-4B87-9B11-2418F6F77512}.Tests|x86.ActiveCfg = Debug|Any CPU
 		{4FE01227-BBE0-4B87-9B11-2418F6F77512}.Tests|x86.Build.0 = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Debug|x64.Build.0 = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Debug|x86.Build.0 = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Release|x64.ActiveCfg = Release|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Release|x64.Build.0 = Release|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Release|x86.ActiveCfg = Release|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Release|x86.Build.0 = Release|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Tests|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Tests|Any CPU.Build.0 = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Tests|x64.ActiveCfg = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Tests|x64.Build.0 = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Tests|x86.ActiveCfg = Debug|Any CPU
+		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Tests|x86.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -19,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.Avalonia", "Example
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReactViewControl", "ReactViewControl\ReactViewControl.csproj", "{4FE01227-BBE0-4B87-9B11-2418F6F77512}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UIAutomation.Framework", "UIAutomation.Framework\UIAutomation.Framework.csproj", "{1EEA710A-40EF-47D8-AB22-6FD4792B195B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UIAutomation.Framework", "UIAutomation.Framework\UIAutomation.Framework.csproj", "{1EEA710A-40EF-47D8-AB22-6FD4792B195B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UIAutomation.Tests.Example", "UIAutomation.Tests.Example\UIAutomation.Tests.Example.csproj", "{5AB76293-7C69-431A-97E1-CB8DCF8624B3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -194,6 +196,24 @@ Global
 		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Tests|x64.Build.0 = Debug|Any CPU
 		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Tests|x86.ActiveCfg = Debug|Any CPU
 		{1EEA710A-40EF-47D8-AB22-6FD4792B195B}.Tests|x86.Build.0 = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Debug|x64.Build.0 = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Debug|x86.Build.0 = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Release|x64.ActiveCfg = Release|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Release|x64.Build.0 = Release|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Release|x86.ActiveCfg = Release|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Release|x86.Build.0 = Release|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Tests|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Tests|Any CPU.Build.0 = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Tests|x64.ActiveCfg = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Tests|x64.Build.0 = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Tests|x86.ActiveCfg = Debug|Any CPU
+		{5AB76293-7C69-431A-97E1-CB8DCF8624B3}.Tests|x86.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

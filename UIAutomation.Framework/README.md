@@ -3,8 +3,8 @@
 ## Requirements
 To be able to run test you should install WinAppDriver and Sikuli. Installation instructions you can find below.
 
-	1. [WinAppDriver](https://github.com/microsoft/WinAppDriver)
-	2. [Sikuli](https://github.com/VladislavKostyukevich/SikuliSharp.NetCore)
+1. [WinAppDriver](https://github.com/microsoft/WinAppDriver)
+2. [Sikuli](https://github.com/VladislavKostyukevich/SikuliSharp.NetCore)
 
 ## Settings
 
@@ -12,7 +12,7 @@ Before running any test you should fill settings in `config.json`
 
 ```json
 {
-	"WinAppDriverPath": "PathTo\\WinAppDriver.exe",
+    "WinAppDriverPath": "PathTo\\WinAppDriver.exe",
     "AppName": "Application Name",
     "Timeout": 20,
     "WindowsApplicationDriverUrl": "URL to WinAppDriverHub",

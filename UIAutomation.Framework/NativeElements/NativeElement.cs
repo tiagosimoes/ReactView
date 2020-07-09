@@ -1,4 +1,5 @@
 ﻿using SikuliSharp;
+using UIAutomation.Framework.Services;
 
 namespace UIAutomation.Framework.NativeElements
 {

@@ -1,52 +1,49 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Windows;
-using System;
+using UIAutomation.Framework.Services;
 
 namespace UIAutomation.Framework
 {
     public class AppSession
     {
-        private const string appName = "Example";
-        private const int timeout = 20;
-        private const string windowsApplicationDriverUrl = "http://127.0.0.1:4723";
-        private const string pathToApp = @"C:\Users\Xiaomi\Documents\OutSystems\WebView\Example.Avalonia\bin\Release\netcoreapp3.1\Example.Avalonia.exe";
-        private const int debugPort = 9090;
-        private const string chromiumVersion = "75.0.3770.90";
 
         protected static WindowsDriver<WindowsElement> session;
         protected static WebService webServices;
 
         public static void Setup()
         {
+            HubService.GetInstance();
+            var config = ConfigurationService.GetConfiguration();
             if (session == null)
             {
-                AppiumOptions startAppOptions = PrepareOptionsForApp(pathToApp);
+                AppiumOptions startAppOptions = PrepareOptionsForApp(config.PathToApp);
                 try
                 {
-                    new WindowsDriver<WindowsElement>(new Uri(windowsApplicationDriverUrl), startAppOptions);
+                    new WindowsDriver<WindowsElement>(new Uri(config.WindowsApplicationDriverUrl), startAppOptions);
                 } catch (Exception)
                 {
                     // catch any exception after startup
                 }
 
                 AppiumOptions desktopOptions = PrepareOptionsForApp("Root");
-                session = new WindowsDriver<WindowsElement>(new Uri(windowsApplicationDriverUrl), desktopOptions);
-                session.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeout);
+                session = new WindowsDriver<WindowsElement>(new Uri(config.WindowsApplicationDriverUrl), desktopOptions);
+                session.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(config.Timeout);
                 Assert.IsNotNull(session);
 
-                var ApplicationWindow = session.FindElementByName(appName);
+                var ApplicationWindow = session.FindElementByName(config.AppName);
                 ApplicationWindow.Click();
                 var ApplicationSessionHandle = ApplicationWindow.GetAttribute("NativeWindowHandle");
                 ApplicationSessionHandle = (int.Parse(ApplicationSessionHandle)).ToString("x");
 
                 AppiumOptions appOptions = new AppiumOptions();
                 appOptions.AddAdditionalCapability("appTopLevelWindow", ApplicationSessionHandle);
-                session = new WindowsDriver<WindowsElement>(new Uri(windowsApplicationDriverUrl), appOptions);
+                session = new WindowsDriver<WindowsElement>(new Uri(config.WindowsApplicationDriverUrl), appOptions);
 
-                session.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(timeout);
+                session.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(config.Timeout);
 
-                webServices = WebService.Init(pathToApp, debugPort, chromiumVersion);
+                webServices = WebService.Init(config.PathToApp, config.DebugPort, config.ChromiumVersion);
             }
         }
 
@@ -63,6 +60,8 @@ namespace UIAutomation.Framework
             {
                 webServices.Quit();
             }
+
+            HubService.GetInstance().Dispose();
         }
 
         private static AppiumOptions PrepareOptionsForApp(string pathToApp)

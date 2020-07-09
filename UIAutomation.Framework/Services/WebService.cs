@@ -6,7 +6,7 @@ using System.Linq;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
 
-namespace UIAutomation.Framework
+namespace UIAutomation.Framework.Services
 {
     public class WebService
     {

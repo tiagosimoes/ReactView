@@ -1,0 +1,9 @@
+﻿{
+	"WinAppDriverPath": "C:\\Program Files (x86)\\Windows Application Driver\\WinAppDriver.exe",
+    "AppName": "Example",
+    "Timeout": 20,
+    "WindowsApplicationDriverUrl": "http://127.0.0.1:4723",
+    "PathToApp" :"C:\\Users\\Xiaomi\\Documents\\OutSystems\\WebView\\Example.Avalonia\\bin\\Release\\netcoreapp3.1\\Example.Avalonia.exe",
+    "DebugPort": 9090,
+    "ChromiumVersion": "75.0.3770.90"
+}

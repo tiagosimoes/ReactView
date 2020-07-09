@@ -1,7 +1,7 @@
 ﻿using OpenQA.Selenium;
-using UIAutomation.Framework;
-using UIAutomation.Framework.Extensions;
 using UIAutomation.Framework.NativeElements;
+using UIAutomation.Framework.Services;
+using UIAutomation.Framework.Utils;
 using UIAutomation.Framework.WebElements;
 
 namespace UIAutomation.Tests.Example.PageObjects

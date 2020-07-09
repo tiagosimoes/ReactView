@@ -1,6 +1,7 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Interactions;
 using OpenQA.Selenium.Support.PageObjects;
+using UIAutomation.Framework.Services;
 
 namespace UIAutomation.Framework.WebElements
 {
@@ -16,12 +17,6 @@ namespace UIAutomation.Framework.WebElements
             this.locator = locator;
             this.name = name;
             this.shadowRootSelectors = shadowRootSelectors;
-        }
-
-        private Element(By locator, string name, By parentLocator)
-        {
-            this.locator = new ByChained(parentLocator, locator);
-            this.name = name;
         }
 
         public string Text => GetElement().Text;
@@ -43,7 +38,6 @@ namespace UIAutomation.Framework.WebElements
             GetElement().Clear();
             GetElement().SendKeys(text);
         }
-
 
         private IWebElement GetElement()
         {

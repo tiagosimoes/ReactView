@@ -1,14 +1,13 @@
 ﻿using NUnit.Framework;
 using UIAutomation.Tests.Example.PageObjects;
 
-namespace UIAutomation.Framework
-{
+namespace UIAutomation.Framework { 
 
-    [TestFixture]
-    public class TestScenario : AppSession
-    {
+[TestFixture]
+public class TestScenario2 : AppSession
+{
         [Test]
-        public void ClickSomething()
+        public void ClickSomething2()
         {
             var tabViewPage = new TabViewPage();
             tabViewPage.TypeIntoNotShadowRootInput("Test text");

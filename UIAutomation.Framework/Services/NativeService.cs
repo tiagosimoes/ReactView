@@ -1,6 +1,6 @@
 ﻿using SikuliSharp;
 
-namespace UIAutomation.Framework
+namespace UIAutomation.Framework.Services
 {
     public class NativeService
     {

@@ -1,10 +1,11 @@
 ﻿using NUnit.Framework;
+using UIAutomation.Tests.Example;
 using UIAutomation.Tests.Example.PageObjects;
 
 namespace UIAutomation.Framework { 
 
 [TestFixture]
-public class TestScenario2 : AppSession
+public class TestScenario2 : BaseTest
 {
         [Test]
         public void ClickSomething2()

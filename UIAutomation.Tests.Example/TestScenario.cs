@@ -1,11 +1,12 @@
 ﻿using NUnit.Framework;
+using UIAutomation.Tests.Example;
 using UIAutomation.Tests.Example.PageObjects;
 
 namespace UIAutomation.Framework
 {
 
     [TestFixture]
-    public class TestScenario : AppSession
+    public class TestScenario : BaseTest
     {
         [Test]
         public void ClickSomething()
@@ -29,18 +30,6 @@ namespace UIAutomation.Framework
             tabViewPage.ClickShadowRootButton();
 
             Assert.IsTrue(tabViewPage.GetTextFromShadowRootText().Contains("Button clicks count: 3"), $"View text does not contain Expected value.");
-        }
-
-        [SetUp]
-        public static void SetUp()
-        {
-            Setup();
-        }
-
-        [TearDown]
-        public static void ClassCleanup()
-        {
-            TearDown();
         }
     }
 }

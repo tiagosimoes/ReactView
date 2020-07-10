@@ -1,7 +1,6 @@
 ﻿using OpenQA.Selenium;
-using OpenQA.Selenium.Interactions;
-using OpenQA.Selenium.Support.PageObjects;
 using UIAutomation.Framework.Services;
+using UIAutomation.Framework.Utils;
 
 namespace UIAutomation.Framework.WebElements
 {
@@ -23,6 +22,7 @@ namespace UIAutomation.Framework.WebElements
 
         public void Click(bool force = false)
         {
+            Logger.Instance.Info($"Clicking {name} web element");
             if (force)
             {
                 jsExecutor.ExecuteScript("arguments[0].click();", GetElement());
@@ -34,6 +34,7 @@ namespace UIAutomation.Framework.WebElements
 
         public void ClearAndType(string text)
         {
+            Logger.Instance.Info($"ClearAndType action for {name} web element, typing {text}");
             GetElement().SendKeys(text);
             GetElement().Clear();
             GetElement().SendKeys(text);

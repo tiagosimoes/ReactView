@@ -8,13 +8,13 @@ namespace UIAutomation.Tests.Example.PageObjects
 {
     public class TabViewPage
     {
-        private readonly NativeElement actionsNative = new NativeElement(ResourceUtil.PatternPath("actions.png"));
-        private readonly NativeElement newTabOption = new NativeElement(ResourceUtil.PatternPath("newTab.png"));
+        private readonly NativeElement actionsNative = new NativeElement(ResourceUtil.PatternPath("actions.png"), "Actions");
+        private readonly NativeElement newTabOption = new NativeElement(ResourceUtil.PatternPath("newTab.png"), "Actions -> New Tab");
         private readonly Input notShadowRootInput = new Input(By.XPath("//*[@id='webview_root']/div/input"), "Input");
         private readonly Button shadowRootButton = new Button(By.CssSelector("#webview_root > div > button"), "Button", new string[] { "#webview_root > div > div:nth-child(10) > div" });
         private readonly Label shadowRootText = new Label(By.CssSelector("#webview_root > div"), "Clicks counter", new string[] { "#webview_root > div > div:nth-child(10) > div" });
-        private NativeElement ViewTab(int index) => new NativeElement(ResourceUtil.PatternPath($"view{index}Tab.png"));
-        private NativeElement ViewTabSelected(int index) => new NativeElement(ResourceUtil.PatternPath($"view{index}TabSelected.png"));
+        private NativeElement ViewTab(int index) => new NativeElement(ResourceUtil.PatternPath($"view{index}Tab.png"), $"View {index}");
+        private NativeElement ViewTabSelected(int index) => new NativeElement(ResourceUtil.PatternPath($"view{index}TabSelected.png"), $"Selected View {index}");
 
         public void TypeIntoNotShadowRootInput(string text)
         {

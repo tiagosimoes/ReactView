@@ -106,7 +106,7 @@ export default class ExampleView extends React.Component<IExampleViewProperties,
                 <br />
                 <input onChange={() => this.props.inputChanged()}/>
                 <div className="buttons-bar">
-                    <button accessKey="c" onClick={() => { this.props.click(null); }}>Click me!</button>&nbsp;
+                    <button accessKey="c" onMouseEnter={() => { this.props.click(null); }}>Over me!</button>&nbsp;
                     <button onClick={this.onMountSubViewClick}>Mount/Wrap/Hide child view</button>
                 </div>
                 Custom resource:

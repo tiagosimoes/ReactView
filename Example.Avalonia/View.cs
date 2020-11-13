@@ -55,29 +55,32 @@ namespace Example.Avalonia {
             {
                 var popup = new Popup();
                 ((ISetLogicalParent)popup).SetParent(view);
-                //var innerView = new PopupView();
-                //innerView.MinHeight = 400;
-                //innerView.MinWidth = 400;
-                //popup.Child = innerView;
+                var panel = new StackPanel();
+                var innerView = new PopupView();
+                innerView.MinHeight = 400;
+                innerView.MinWidth = 400;
+                panel.Children.Add(new TextBox());
+                panel.Children.Add(innerView);
+                popup.Child = panel;
                 popup.MinWidth = 100;
                 popup.MinHeight = 100;
                 popup.PlacementTarget = view;
                 popup.PlacementMode = PlacementMode.AnchorAndGravity;
                 popup.PlacementAnchor = PopupAnchor.TopLeft;
                 popup.PlacementGravity = PopupGravity.BottomRight;
-                //popup.IsLightDismissEnabled = true;
+                popup.IsLightDismissEnabled = true;
 
                 popup.Opened += delegate
                 {
                     //Dispatcher.UIThread.Post(() => popup.Child.Focus());
                 };
 
-                //innerView.Loaded += () =>
-                //{
+                innerView.Loaded += () =>
+                {
                     Dispatcher.UIThread.Post(() => popup.IsOpen = true);
-                //};
+                };
 
-                //innerView.Load();
+                innerView.Load();
             });
             
             AppendLog("Clicked on a button inside the React view");

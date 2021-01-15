@@ -19,6 +19,7 @@ namespace Example.Avalonia {
 
         public View() {
             InitializeComponent();
+            DataContext = new MainWindowViewModel(view);
         }
 
         private void InitializeComponent() {
@@ -72,8 +73,6 @@ namespace Example.Avalonia {
         public void ToggleIsEnabled() {
             view.IsEnabled = !view.IsEnabled;
         }
-
-        public ReactViewControl.EditCommands EditCommands => view.EditCommands;
 
         private string OnExampleViewGetTime() {
             return DateTime.Now.ToShortTimeString();

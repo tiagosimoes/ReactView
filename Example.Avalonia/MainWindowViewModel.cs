@@ -1,5 +1,7 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Reactive;
+using Avalonia.Threading;
 using ReactiveUI;
 using WebViewControl;
 
@@ -7,33 +9,34 @@ namespace Example.Avalonia {
 
     internal class MainWindowViewModel : ReactiveObject {
 
-        public MainWindowViewModel(ExampleView view) {
+        public MainWindowViewModel(Func<View> selectedViewGetter) {
+
             CutCommand = ReactiveCommand.Create(() => {
-                view.EditCommands.Cut();
+                Dispatcher.UIThread.InvokeAsync(() => selectedViewGetter.Invoke().view.EditCommands.Cut());
             });
 
             CopyCommand = ReactiveCommand.Create(() => {
-                view.EditCommands.Copy();
+                Dispatcher.UIThread.InvokeAsync(() => selectedViewGetter.Invoke().view.EditCommands.Copy());
             });
 
             PasteCommand = ReactiveCommand.Create(() => {
-                view.EditCommands.Paste();
+                Dispatcher.UIThread.InvokeAsync(() => selectedViewGetter.Invoke().view.EditCommands.Paste());
             });
 
             UndoCommand = ReactiveCommand.Create(() => {
-                view.EditCommands.Undo();
+                Dispatcher.UIThread.InvokeAsync(() => selectedViewGetter.Invoke().view.EditCommands.Undo());
             });
 
             RedoCommand = ReactiveCommand.Create(() => {
-                view.EditCommands.Redo();
+                Dispatcher.UIThread.InvokeAsync(() => selectedViewGetter.Invoke().view.EditCommands.Redo());
             });
 
             SelectAllCommand = ReactiveCommand.Create(() => {
-                view.EditCommands.SelectAll();
+                Dispatcher.UIThread.InvokeAsync(() => selectedViewGetter.Invoke().view.EditCommands.SelectAll());
             });
 
             DeleteCommand = ReactiveCommand.Create(() => {
-                view.EditCommands.Delete();
+                Dispatcher.UIThread.InvokeAsync(() => selectedViewGetter.Invoke().view.EditCommands.Delete());
             });
         }
 

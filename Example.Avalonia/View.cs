@@ -14,12 +14,12 @@ namespace Example.Avalonia {
 
         Type IStyleable.StyleKey => typeof(ContentControl);
 
-        private ExampleView view;
+        internal ExampleView view;
         private SubExampleViewModule childView;
 
         public View() {
             InitializeComponent();
-            DataContext = new MainWindowViewModel(view);
+            
         }
 
         private void InitializeComponent() {

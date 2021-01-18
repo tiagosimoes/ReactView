@@ -17,7 +17,7 @@ namespace Example.Avalonia {
             WebView.Settings.OsrEnabled = false;
             InitializeComponent();
             CreateTab();
-            
+            DataContext = new MainWindowViewModel(() => SelectedView);
         }
 
         private void InitializeComponent() {

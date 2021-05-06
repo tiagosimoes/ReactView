@@ -37,10 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="WebViewControl-Avalonia" Version="2.91.7" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\..\WebView\WebViewControl.Avalonia\WebViewControl.Avalonia.csproj" />
     <ProjectReference Include="..\ReactViewResources\ReactViewResources.csproj">
       <PrivateAssets>all</PrivateAssets>
       <IncludeInNugetPackage>true</IncludeInNugetPackage>

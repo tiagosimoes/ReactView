@@ -34,9 +34,17 @@ namespace ReactViewControl {
         private bool enableDebugMode;
         private ResourceUrl defaultStyleSheet;
         private bool isInputDisabled; // used primarly to control the intention to disable input (before the browser is ready)
+        private readonly Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject;
+        private readonly Action<string> unregisterWebJavaScriptObject;
+        private readonly Action<string, object[]> executeWebScriptFunctionWithSerializedParams;
 
-        public ReactViewRender(ResourceUrl defaultStyleSheet, Func<IViewModule[]> initializePlugins, bool preloadWebView, int maxNativeMethodsParallelCalls, bool enableDebugMode, Uri devServerUri = null) {
+
+        public ReactViewRender(ResourceUrl defaultStyleSheet, Func<IViewModule[]> initializePlugins, bool preloadWebView, int maxNativeMethodsParallelCalls, bool enableDebugMode, Uri devServerUri = null, Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject = null, Action<string> unregisterWebJavaScriptObject = null, Action<string, object[]> executeWebScriptFunctionWithSerializedParams = null) {
             UserCallingAssembly = GetUserCallingMethod().ReflectedType.Assembly;
+
+            this.registerWebJavaScriptObject = registerWebJavaScriptObject;
+            this.unregisterWebJavaScriptObject = unregisterWebJavaScriptObject;
+            this.executeWebScriptFunctionWithSerializedParams = executeWebScriptFunctionWithSerializedParams;
 
             // must useSharedDomain for the local storage to be shared
             WebView = new ExtendedWebView(useSharedDomain: true) {
@@ -47,7 +55,7 @@ namespace ReactViewControl {
                 MaxNativeMethodsParallelCalls = maxNativeMethodsParallelCalls
             };
 
-            NativeAPI.Initialize(this);
+            NativeAPI.Initialize(this, registerWebJavaScriptObject, unregisterWebJavaScriptObject);
             Loader = new LoaderModule(this);
 
             DefaultStyleSheet = defaultStyleSheet;
@@ -525,6 +533,7 @@ namespace ReactViewControl {
         private void RegisterNativeObject(IViewModule module, FrameInfo frame) {
             var nativeObjectName = module.GetNativeObjectFullName(frame.Name);
             WebView.RegisterJavascriptObject(nativeObjectName, module.CreateNativeObject(), interceptCall: CallNativeMethod, executeCallsInUI: false);
+            registerWebJavaScriptObject(nativeObjectName, module.CreateNativeObject(), /*interceptCall*/ CallNativeMethod, /*executeCallsInUI*/ false);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -543,6 +552,7 @@ namespace ReactViewControl {
         private void UnregisterNativeObject(IViewModule module, FrameInfo frame) {
             var nativeObjectName = module.GetNativeObjectFullName(frame.Name);
             WebView.UnregisterJavascriptObject(nativeObjectName);
+            unregisterWebJavaScriptObject(nativeObjectName);
         }
 
         /// <summary>

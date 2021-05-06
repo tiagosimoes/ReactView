@@ -61,7 +61,7 @@ namespace Example.Avalonia {
             });
         }
 
-        private View SelectedView => (View) tabs.SelectedContent;
+        public View SelectedView => (View) tabs.SelectedContent;
 
         private void OnNewTabClick(object sender, RoutedEventArgs e) {
             CreateTab();

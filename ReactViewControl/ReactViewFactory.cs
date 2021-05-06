@@ -42,5 +42,12 @@ namespace ReactViewControl {
         /// Defaults to int.MaxValue, calls will be executed in parallel and reentrancy can occur.
         /// </summary>
         public virtual int MaxNativeMethodsParallelCalls => int.MaxValue;
-    }
+
+        public virtual bool RegisterWebJavaScriptObject(string name, object objectToBind, Func<Func<object>, object> interceptCall, bool executeCallsInUI = false) => false;
+
+        public virtual void UnregisterWebJavaScriptObject(string name) {}
+
+        public virtual void ExecuteWebScriptFunctionWithSerializedParams(string functionName, params object[] args) { }
+
+        }
 }

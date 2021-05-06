@@ -20,9 +20,26 @@ function withAPI(action: (api: INativeObject) => void): void {
 }
 
 export async function bindNativeObject<T>(nativeObjectName: string): Promise<T> {
-    await cefglue.checkObjectBound(nativeObjectName);
+    if (typeof cefglue !== "undefined") {
+        await cefglue.checkObjectBound(nativeObjectName);
+    } else {
+        await sleep(getRegisteredObject, nativeObjectName);
+    }
     return window[nativeObjectName] as T;
 }
+
+async function getRegisteredObject(nativeObjectName) {
+    return window[nativeObjectName];
+}
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+async function sleep(fn, ...args) {
+    await timeout(5000);
+    return fn(...args);
+}
+
+
 
 export function notifyViewInitialized(viewName: string): void {
     withAPI(api => api.notifyViewInitialized(viewName));

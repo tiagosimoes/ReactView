@@ -12,6 +12,7 @@ namespace ReactViewControl {
         private string id;
         private string frameName;
         private ExtendedWebView webView;
+        private Action<string, object[]> executeWebScriptFunctionWithSerializedParams;
 
         private ConcurrentQueue<Tuple<IViewModule, string, object[]>> PendingExecutions { get; } = new ConcurrentQueue<Tuple<IViewModule, string, object[]>>();
 
@@ -25,6 +26,7 @@ namespace ReactViewControl {
             if (webView != null) {
                 var method = FormatMethodInvocation(module, methodCall);
                 webView.ExecuteScriptFunctionWithSerializedParams(method, args);
+                executeWebScriptFunctionWithSerializedParams(method, args);
             } else {
                 PendingExecutions.Enqueue(Tuple.Create(module, methodCall, args));
             }
@@ -41,14 +43,16 @@ namespace ReactViewControl {
             return webView.EvaluateScriptFunctionWithSerializedParams<T>(method, args);
         }
 
-        public void Start(ExtendedWebView webView, string frameName, string id) {
+        public void Start(ExtendedWebView webView, string frameName, string id, Action<string, object[]> executeWebScriptFunctionWithSerializedParams) {
             this.id = id;
             this.frameName = frameName;
             this.webView = webView;
+            this.executeWebScriptFunctionWithSerializedParams = executeWebScriptFunctionWithSerializedParams;
             while (true) {
                 if (PendingExecutions.TryDequeue(out var pendingScript)) {
                     var method = FormatMethodInvocation(pendingScript.Item1, pendingScript.Item2);
                     webView.ExecuteScriptFunctionWithSerializedParams(method, pendingScript.Item3);
+                    executeWebScriptFunctionWithSerializedParams(method, pendingScript.Item3);
                 } else {
                     // nothing else to execute
                     break;

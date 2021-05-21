@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>Example.Avalonia</RootNamespace>
     <AssemblyName>Example.Avalonia</AssemblyName>
     <Configurations>Debug;Release;ReleaseAvalonia;ReleaseWPF</Configurations>
@@ -27,6 +27,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="0.10.0" />
     <PackageReference Include="Avalonia.ReactiveUI" Version="0.10.0" />
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.1.1" />
     <PackageReference Include="NLog" Version="4.6.2" />
     <PackageReference Include="ViewGenerator" Version="1.0.316">
       <PrivateAssets>all</PrivateAssets>
@@ -40,6 +41,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\ReactViewControl.Avalonia\ReactViewControl.Avalonia.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>

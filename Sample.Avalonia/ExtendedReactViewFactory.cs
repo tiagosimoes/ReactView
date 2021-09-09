@@ -86,6 +86,12 @@ namespace Sample.Avalonia {
             registeredObjects.Remove(name);
         }
 
+        public override void ExecuteWebScriptFunctionWithSerializedParams(string functionName, params object[] args) {
+            functionName = functionName.Replace("embedded://webview/", "/");
+            var text = $"{{ \"Execute\": \"{JsonEncodedText.Encode(functionName)}\", \"Arguments\": {JsonSerializer.Serialize(args)} }}";
+            _ = WebServer.ServerApiStartup.SendWebSocketMessage(text);
+        }
+
 #if DEBUG
         public override bool EnableDebugMode => true;
 

@@ -30,24 +30,45 @@ async function bootstrap() {
 
 function onWebSocketMessageReceived(event) {
     var object = JSON.parse(event.data);
-    var registerObjectName = object["RegisterObjectName"];
-    if (registerObjectName != null) {
-        window[registerObjectName] = new Object() as any;
-        var windowObject = window[registerObjectName] as any;
-        object.Object.methods.forEach(function (method) {
-            if (method["ReturnType"].ClassName != "System.Void") {
-                windowObject[lowerFirstLetter(method["MethodName"])] = async function (args) {
-                    var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: args };
-                    return await sendMessage(JSON.stringify(methodCall));
-                }
-            } else {
-                windowObject[lowerFirstLetter(method["MethodName"])] =  function (args) {
-                    var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: args };
-                    window["websocket"].send(JSON.stringify(methodCall));
-                }
-            }
-        });
+    var objectName = Object.getOwnPropertyNames(object)[0]
+    var objectNameValue = object[objectName];
+    switch (objectName) {
+        case "RegisterObjectName":
+            registerObject(objectNameValue, object.Object);
+            break;
+        case "UnregisterObjectName":
+            throw "NotImplemented";
+        case "Execute":
+            execute(objectNameValue, object.Arguments)
+            break;
+        default:
+            throw "NotImplemented";
     }
+}
+function execute(script, args) {
+    if (args != null) {
+        eval(script + "(" + JSON.stringify(args) + ")");
+    } else {
+        eval(script);
+    }
+} 
+
+function registerObject(registerObjectName: string, object: any) {
+    window[registerObjectName] = new Object() as any;
+    var windowObject = window[registerObjectName] as any;
+    object.methods.forEach(function (method) {
+        if (method["ReturnType"].ClassName != "System.Void") {
+            windowObject[lowerFirstLetter(method["MethodName"])] = async function (args) {
+                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: args };
+                return await sendMessage(JSON.stringify(methodCall));
+            }
+        } else {
+            windowObject[lowerFirstLetter(method["MethodName"])] = function (args) {
+                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: args };
+                window["websocket"].send(JSON.stringify(methodCall));
+            }
+        }
+    });
 }
 
 async function sendMessage(methodCall): Promise<object> {

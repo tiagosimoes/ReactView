@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -54,20 +55,45 @@ namespace Example.Avalonia.WebServer {
             public string ObjectName;
             public string MethodName;
             public object Args;
+            public int CallKey;
         }
 
         public static MethodCall DeserializeMethodCall(string text) {
             return JsonSerializer.Deserialize<MethodCall>(text, new JsonSerializerOptions { IncludeFields = true });
         }
 
+        private static object GetValue(JsonElement elem) {
+            switch (elem.ValueKind) {
+                case JsonValueKind.Null:
+                    return null;
+                case JsonValueKind.Number:
+                    return elem.GetDouble();
+                case JsonValueKind.False:
+                    return false;
+                case JsonValueKind.True:
+                    return true;
+                case JsonValueKind.Undefined:
+                    return null;
+                case JsonValueKind.String:
+                    return elem.GetString();
+                case JsonValueKind.Array:
+                    return elem.EnumerateArray()
+                        .Select(o => GetValue(o))
+                        .ToArray();
+                case JsonValueKind.Object:
+                    throw new NotImplementedException();
+            }
+            throw new NotImplementedException();
+        }
+
         internal static object ExecuteMethod(object obj, MethodCall methodCall) {
             var method = obj.GetType().GetMethod(methodCall.MethodName);
             object[] arguments = Array.Empty<object>();
             if (methodCall.Args is JsonElement elem) {
-                if (elem.ValueKind == JsonValueKind.String) {
-                    arguments = new[] { elem.GetString() };
-                } else {
-                    throw new NotImplementedException(); //TODO TCS
+                if (elem.ValueKind == JsonValueKind.Array) {
+                    arguments = (object[]) GetValue(elem);
+                } else {    
+                    arguments = new[] {GetValue(elem) };
                 }
             }
             if (method.ReturnType == typeof(void)) {
@@ -77,5 +103,5 @@ namespace Example.Avalonia.WebServer {
                 return obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments);
             }
         }
-    }
+}
 }

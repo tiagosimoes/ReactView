@@ -21,7 +21,7 @@ namespace Example.Avalonia {
         public override void OnFrameworkInitializationCompleted() {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
                 ServerService.StartServer();
-                Thread.Sleep(1000);
+                Thread.Sleep(300); // TODO TCS Review this timeout
                 desktop.MainWindow = new MainWindow();
             }
             base.OnFrameworkInitializationCompleted();

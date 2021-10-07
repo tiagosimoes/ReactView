@@ -4,6 +4,7 @@ import { loadScript } from "./Internal/ResourcesLoader";
 import { newView, ViewMetadata } from "./Internal/ViewMetadata";
 
 declare function define(name: string, dependencies: string[], definition: Function);
+var returnValues = new Object();
 
 async function bootstrap() {
     await waitForDOMReady();
@@ -41,6 +42,9 @@ function onWebSocketMessageReceived(event) {
         case "Execute":
             execute(objectNameValue, object.Arguments)
             break;
+        case "ReturnValue":
+            returnValues[objectNameValue] = object.Arguments;
+            break;
         default:
             throw "NotImplemented";
     }
@@ -58,23 +62,37 @@ function registerObject(registerObjectName: string, object: any) {
     var windowObject = window[registerObjectName] as any;
     object.methods.forEach(function (method) {
         if (method["ReturnType"].ClassName != "System.Void") {
-            windowObject[lowerFirstLetter(method["MethodName"])] = async function (args) {
-                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: args };
-                return await sendMessage(JSON.stringify(methodCall));
+            windowObject[lowerFirstLetter(method["MethodName"])] = async function (...theArgs) {
+                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: theArgs, CallKey: Math.round(Math.random() * 10000) };
+                window["websocket"].send(JSON.stringify(methodCall));
+                return await getReturnValue(methodCall.CallKey, methodCall);
             }
         } else {
-            windowObject[lowerFirstLetter(method["MethodName"])] = function (args) {
-                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: args };
+            windowObject[lowerFirstLetter(method["MethodName"])] = function (...theArgs) {
+                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: theArgs };
                 window["websocket"].send(JSON.stringify(methodCall));
             }
         }
     });
 }
-
-async function sendMessage(methodCall): Promise<object> {
+async function getReturnValue(callKey: number, methodCall:object): Promise<object> {
     return new Promise((resolve, reject) => {
-        var result = window["websocket"].send(methodCall);
-        setTimeout(() => resolve(result), 1000)
+        var interval = setInterval(() => {
+            if (returnValues[callKey] !== undefined) {
+                var result = returnValues[callKey]
+                delete returnValues[callKey];
+                resolve(result);
+                if (interval != null) {
+                    clearInterval(interval);
+                }
+            }
+        }, 10);
+        setTimeout(() => {
+            if (interval != null) {
+                clearInterval(interval);
+                throw "timeout after 10s waiting for " + JSON.stringify(methodCall); // TODO TCS Review this timeout
+            }
+        }, 10000)
     });
 }
 

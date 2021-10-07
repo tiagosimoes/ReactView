@@ -34,10 +34,11 @@ namespace Example.Avalonia.WebServer {
                     var path = context.Request.Path;
                     if (path == $"/{reactViewResources}/{customResourcePath}//") {
                         // TODO: Handle custom resources (per view)
+                    } else {
+                        var stream = ResourcesManager.TryGetResource(path, true, out string extension);
+                        context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
+                        await stream.CopyToAsync(context.Response.Body);
                     }
-                    var stream = ResourcesManager.TryGetResource(path, true, out string extension);
-                    context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
-                    await stream.CopyToAsync(context.Response.Body);
                 }
             });
             // Just to test

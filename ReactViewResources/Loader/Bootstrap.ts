@@ -73,7 +73,7 @@ function registerObject(registerObjectName: string, object: any) {
 
 async function sendMessage(methodCall): Promise<object> {
     return new Promise((resolve, reject) => {
-        var result = window["websocket"].send(JSON.stringify(methodCall));
+        var result = window["websocket"].send(methodCall);
         setTimeout(() => resolve(result), 1000)
     });
 }

@@ -51,7 +51,8 @@ namespace Example.Avalonia.WebServer {
             return JsonSerializer.Serialize(serializedObject, new JsonSerializerOptions { IncludeFields = true, WriteIndented = true});
         }
 
-        public class MethodCall {
+        [Serializable]
+        public struct MethodCall {
             public string ObjectName;
             public string MethodName;
             public object Args;
@@ -62,7 +63,7 @@ namespace Example.Avalonia.WebServer {
             return JsonSerializer.Deserialize<MethodCall>(text, new JsonSerializerOptions { IncludeFields = true });
         }
 
-        private static object GetValue(JsonElement elem) {
+        private static object GetJSONValue(JsonElement elem) {
             switch (elem.ValueKind) {
                 case JsonValueKind.Null:
                     return null;
@@ -78,7 +79,7 @@ namespace Example.Avalonia.WebServer {
                     return elem.GetString();
                 case JsonValueKind.Array:
                     return elem.EnumerateArray()
-                        .Select(o => GetValue(o))
+                        .Select(o => GetJSONValue(o))
                         .ToArray();
                 case JsonValueKind.Object:
                     throw new NotImplementedException();
@@ -91,9 +92,9 @@ namespace Example.Avalonia.WebServer {
             object[] arguments = Array.Empty<object>();
             if (methodCall.Args is JsonElement elem) {
                 if (elem.ValueKind == JsonValueKind.Array) {
-                    arguments = (object[]) GetValue(elem);
+                    arguments = (object[]) GetJSONValue(elem);
                 } else {    
-                    arguments = new[] {GetValue(elem) };
+                    arguments = new[] {GetJSONValue(elem) };
                 }
             }
             if (method.ReturnType == typeof(void)) {

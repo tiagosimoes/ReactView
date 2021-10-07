@@ -21,7 +21,7 @@ namespace Sample.Avalonia.WebServer {
             var server = "http://localhost:8080";
             var reactViewResources = "ReactViewResources";
             var customResourcePath = "custom/resource";
-            app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromMinutes(15) });
+            app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromMinutes(15) });  // TODO TCS Review this timeout
             app.Use(async (context, next) => {
                 if (context.WebSockets.IsWebSocketRequest) {
                     using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync()) {
@@ -32,8 +32,8 @@ namespace Sample.Avalonia.WebServer {
                 } else {
                     // static resources
                     var path = context.Request.Path;
-                    if (path == $"/{reactViewResources}/{customResourcePath}//") {
-                        // TODO: Handle custom resources (per view)
+                    if (path.ToString().StartsWith($"/{reactViewResources}/{customResourcePath}/")) {
+                        // TODO TCS Handle custom resources (per view)
                     } else {
                         var stream = ResourcesManager.TryGetResource(path, true, out string extension);
                         context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);

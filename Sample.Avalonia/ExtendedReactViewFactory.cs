@@ -77,7 +77,13 @@ namespace Sample.Avalonia {
             var methodCall = DeserializeMethodCall(text);
             var obj = registeredObjects[methodCall.ObjectName];
             var callTargetMethod = registeredObjectInterceptMethods[methodCall.ObjectName];
-            callTargetMethod(() => ExecuteMethod(obj, methodCall));
+            callTargetMethod(() => {
+                var result = ExecuteMethod(obj, methodCall);
+                if (obj.GetType().GetMethod(methodCall.MethodName).ReturnType != typeof(void)) {
+                    ReturnValue(methodCall.CallKey, result);
+                }
+                return result;
+            });
         }
 
         public override void UnregisterWebJavaScriptObject(string name) {
@@ -91,7 +97,10 @@ namespace Sample.Avalonia {
             var text = $"{{ \"Execute\": \"{JsonEncodedText.Encode(functionName)}\", \"Arguments\": {JsonSerializer.Serialize(args)} }}";
             _ = WebServer.ServerApiStartup.SendWebSocketMessage(text);
         }
-
+        private void ReturnValue(float CallKey, object Value) {
+            var text = $"{{ \"ReturnValue\": \"{CallKey}\", \"Arguments\": {JsonSerializer.Serialize(Value)} }}";
+            _ = WebServer.ServerApiStartup.SendWebSocketMessage(text);
+        }
 #if DEBUG
         public override bool EnableDebugMode => true;
 

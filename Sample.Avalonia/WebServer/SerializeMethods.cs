@@ -61,20 +61,21 @@ namespace Sample.Avalonia.WebServer {
         }
 
         internal static object ExecuteMethod(object obj, MethodCall methodCall) {
+            var method = obj.GetType().GetMethod(methodCall.MethodName);
+            object[] arguments = Array.Empty<object>();
             if (methodCall.Args is JsonElement elem) {
-                if(elem.ValueKind == JsonValueKind.String) {
-                    var method = obj.GetType().GetMethod(methodCall.MethodName);
-                    if (method.ReturnType == typeof(void)) {
-                        obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, new[] { elem.GetString() });
-                        return null;
-                    } else {
-                        throw new NotImplementedException(); //TODO TCS
-                    }
+                if (elem.ValueKind == JsonValueKind.String) {
+                    arguments = new[] { elem.GetString() };
                 } else {
                     throw new NotImplementedException(); //TODO TCS
                 }
             }
-            throw new NotImplementedException();
+            if (method.ReturnType == typeof(void)) {
+                obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments);
+                return null;
+            } else {
+                return obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments);
+            }
         }
     }
 }

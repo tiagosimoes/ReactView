@@ -23,27 +23,24 @@ export async function bindNativeObject<T>(nativeObjectName: string): Promise<T> 
     if (typeof cefglue !== "undefined") {
         await cefglue.checkObjectBound(nativeObjectName);
     } else {
-        await sleep(getRegisteredObject, nativeObjectName);
+        await getRegisteredObject(nativeObjectName);
     }
     return window[nativeObjectName] as T;
 }
 
+var hasWaited = false;
+
 async function getRegisteredObject(nativeObjectName) {
-    return window[nativeObjectName];
-}
-function timeout(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-var hasWaited;
-async function sleep(fn, ...args) {
     if (!hasWaited) {
-        await timeout(2000); //TODO TCS: Not really sure why we need to wait for this to start
+        await sleep(2000); //TODO TCS: Not really sure why we need to wait for this to start the first time
         hasWaited = true;
     }
-    return fn(...args);
+    return window[nativeObjectName];
 }
 
-
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export function notifyViewInitialized(viewName: string): void {
     withAPI(api => api.notifyViewInitialized(viewName));

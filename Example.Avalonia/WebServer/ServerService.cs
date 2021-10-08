@@ -9,8 +9,6 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Example.Avalonia.WebServer {
     public class ServerApiStartup {
@@ -18,31 +16,30 @@ namespace Example.Avalonia.WebServer {
         public void Configure(IApplicationBuilder app) {
             //app.UseSession();
             //app.UseHttpsRedirection();
-            var server = "http://localhost:8080";
-            var reactViewResources = "ReactViewResources";
-            var customResourcePath = "custom/resource";
+            string server = "http://localhost:8080";
+            string reactViewResources = "ReactViewResources";
+            string customResourcePath = "custom/resource";
             app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromMinutes(15) });  // TODO TCS Review this timeout
-            app.Use(async (context, next) => {
+            _ = app.Use(async (context, next) => {
                 if (context.WebSockets.IsWebSocketRequest) {
-                    using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync()) {
-                        var socketFinishedTcs = new TaskCompletionSource<object>();
-                        BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
-                        await socketFinishedTcs.Task;
-                    }
+                    using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                    var socketFinishedTcs = new TaskCompletionSource<object>();
+                    BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
+                    await socketFinishedTcs.Task;
                 } else {
                     // static resources
-                    var path = context.Request.Path;
+                    PathString path = context.Request.Path;
                     if (path.ToString().StartsWith($"/{reactViewResources}/{customResourcePath}/")) {
                         // TODO TCS Handle custom resources (per view)
                     } else {
-                        var stream = ResourcesManager.TryGetResource(path, true, out string extension);
+                        using Stream stream = ResourcesManager.TryGetResource(path, true, out string extension);
                         context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
                         await stream.CopyToAsync(context.Response.Body);
                     }
                 }
             });
             // Just to test
-            var url = $"{server}/{reactViewResources}/index.html?./&true&__Modules__&__NativeAPI__&{customResourcePath}";
+            string url = $"{server}/{reactViewResources}/index.html?./&true&__Modules__&__NativeAPI__&{customResourcePath}";
             url = url.Replace("&", "^&");
             Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
         }
@@ -86,7 +83,7 @@ namespace Example.Avalonia.WebServer {
         private IWebHost server = null;
         public void RestartServer() {
             StopServer();
-            this.server = WebHost.CreateDefaultBuilder().UseKestrel(x => {
+            server = WebHost.CreateDefaultBuilder().UseKestrel(x => {
                 var PortNumber = 8080;
                 x.ListenAnyIP(PortNumber);
                 x.ListenLocalhost(PortNumber);
@@ -101,9 +98,9 @@ namespace Example.Avalonia.WebServer {
         }
 
         public void StopServer() {
-            if (this.server != null) {
+            if (server != null) {
                 // Shutting down
-                this.server.StopAsync().Wait();
+                server.StopAsync().Wait();
             }
             // Down
         }

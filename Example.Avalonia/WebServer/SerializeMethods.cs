@@ -64,26 +64,17 @@ namespace Example.Avalonia.WebServer {
         }
 
         private static object GetJSONValue(JsonElement elem) {
-            switch (elem.ValueKind) {
-                case JsonValueKind.Null:
-                    return null;
-                case JsonValueKind.Number:
-                    return elem.GetDouble();
-                case JsonValueKind.False:
-                    return false;
-                case JsonValueKind.True:
-                    return true;
-                case JsonValueKind.Undefined:
-                    return null;
-                case JsonValueKind.String:
-                    return elem.GetString();
-                case JsonValueKind.Array:
-                    return elem.EnumerateArray()
-                        .Select(o => GetJSONValue(o))
-                        .ToArray();
-                case JsonValueKind.Object:
-                    throw new NotImplementedException();
-            }
+            return elem.ValueKind switch {
+                JsonValueKind.Null => null,
+                JsonValueKind.Number => elem.GetDouble(),
+                JsonValueKind.False => false,
+                JsonValueKind.True => true,
+                JsonValueKind.Undefined => null,
+                JsonValueKind.String => elem.GetString(),
+                JsonValueKind.Array => elem.EnumerateArray().Select(o => GetJSONValue(o)).ToArray(),
+                JsonValueKind.Object => throw new NotImplementedException(),
+                _ => throw new NotImplementedException(),
+            };
             throw new NotImplementedException();
         }
 
@@ -104,5 +95,5 @@ namespace Example.Avalonia.WebServer {
                 return obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments);
             }
         }
-}
+    }
 }

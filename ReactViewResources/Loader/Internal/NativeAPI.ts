@@ -22,24 +22,8 @@ function withAPI(action: (api: INativeObject) => void): void {
 export async function bindNativeObject<T>(nativeObjectName: string): Promise<T> {
     if (typeof cefglue !== "undefined") {
         await cefglue.checkObjectBound(nativeObjectName);
-    } else {
-        await getRegisteredObject(nativeObjectName);
-    }
+    } 
     return window[nativeObjectName] as T;
-}
-
-var hasWaited = false;
-
-async function getRegisteredObject(nativeObjectName) {
-    if (!hasWaited) {
-        await sleep(2000); //TODO TCS: Not really sure why we need to wait for this to start the first time
-        hasWaited = true;
-    }
-    return window[nativeObjectName];
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export function notifyViewInitialized(viewName: string): void {

@@ -46,16 +46,16 @@ namespace Example.Avalonia.WebServer {
 
         public static async Task SendWebSocketMessage(string message) {
             var stream = Encoding.UTF8.GetBytes(message);
-            while (WebSocket == null) {
+            while (webSocket == null) {
                 await Task.Delay(25);
             }
-            await WebSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
+            await webSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        private static WebSocket WebSocket;
+        private static WebSocket webSocket;
         internal class BackgroundSocketProcessor {
             internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs) {
-                WebSocket = socket;
+                webSocket = socket;
                 _ = OnWebSocketMessageReceived(socket);
             }
         }

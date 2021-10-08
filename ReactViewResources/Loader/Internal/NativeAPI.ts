@@ -34,8 +34,12 @@ async function getRegisteredObject(nativeObjectName) {
 function timeout(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+var hasWaited;
 async function sleep(fn, ...args) {
-    await timeout(5000);
+    if (!hasWaited) {
+        await timeout(2000); //TODO TCS: Not really sure why we need to wait for this to start
+        hasWaited = true;
+    }
     return fn(...args);
 }
 

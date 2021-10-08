@@ -49,6 +49,9 @@ namespace Example.Avalonia.WebServer {
 
         public static async Task SendWebSocketMessage(string message) {
             var stream = Encoding.UTF8.GetBytes(message);
+            while (WebSocket == null) {
+                await Task.Delay(25);
+            }
             await WebSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 

@@ -3,15 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.StaticFiles;
 
 namespace Example.Avalonia.WebServer {
 
     public static partial class ResourcesManager {
 
-        private static readonly AssemblyCache cache = new AssemblyCache();
+        private static readonly AssemblyCache Cache = new AssemblyCache();
 
         private static string ComputeEmbeddedResourceName(string defaultNamespace, IEnumerable<string> resourcePath) {
             var resourceParts = (new[] { defaultNamespace }).Concat(resourcePath).ToArray();
@@ -34,9 +32,8 @@ namespace Example.Avalonia.WebServer {
             return InternalTryGetResource(assembly, resourcePath.First(), resourcePath.Skip(1), false);
         }
 
-
         internal static Stream TryGetResource(string url, bool failOnMissingAssembly, out string extension) {
-            var resourceAssembly = cache.ResolveResourceAssembly(url, failOnMissingAssembly);
+            var resourceAssembly = Cache.ResolveResourceAssembly(url, failOnMissingAssembly);
             if (resourceAssembly == null) {
                 extension = string.Empty;
                 return null;

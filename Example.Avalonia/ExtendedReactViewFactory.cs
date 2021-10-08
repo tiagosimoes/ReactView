@@ -27,12 +27,12 @@ namespace Example.Avalonia {
         public override int MaxNativeMethodsParallelCalls => 1;
 
         delegate object CallTargetMethod(Func<object> target);
-        static readonly Dictionary<string, object> registeredObjects = new Dictionary<string, object>();
+        static readonly Dictionary<string, object> RegisteredObjects = new Dictionary<string, object>();
         static readonly Dictionary<string, CallTargetMethod> registeredObjectInterceptMethods = new Dictionary<string, CallTargetMethod>();
         private CountdownEvent JavascriptPendingCalls { get; } = new CountdownEvent(1);
 
         public override bool RegisterWebJavaScriptObject(string name, object objectToBind, Func<Func<object>, object> interceptCall, bool executeCallsInUI = false) {
-            if (registeredObjects.ContainsKey(name)) {
+            if (RegisteredObjects.ContainsKey(name)) {
                 return false;
             }
 
@@ -64,7 +64,7 @@ namespace Example.Avalonia {
 
 
             var serializedObject = SerializeObject(objectToBind);
-            registeredObjects[name] = objectToBind;
+            RegisteredObjects[name] = objectToBind;
             registeredObjectInterceptMethods[name] = CallTargetMethod;
             var text = $"{{ \"RegisterObjectName\": \"{name}\", \"Object\": {serializedObject} }}";
             if (WebServer.ServerApiStartup.ProcessMessage == null) {
@@ -76,7 +76,7 @@ namespace Example.Avalonia {
 
         public void ReceiveMessage(string text) {
             var methodCall = DeserializeMethodCall(text);
-            var obj = registeredObjects[methodCall.ObjectName];
+            var obj = RegisteredObjects[methodCall.ObjectName];
             var callTargetMethod = registeredObjectInterceptMethods[methodCall.ObjectName];
             callTargetMethod(() => {
                 var result = ExecuteMethod(obj, methodCall);
@@ -90,7 +90,7 @@ namespace Example.Avalonia {
         public override void UnregisterWebJavaScriptObject(string name) {
             var text = $"{{ \"UnregisterObjectName\": \"{name}\"}}";
             _ = WebServer.ServerApiStartup.SendWebSocketMessage(text);
-            registeredObjects.Remove(name);
+            RegisteredObjects.Remove(name);
         }
 
         public override void ExecuteWebScriptFunctionWithSerializedParams(string functionName, params object[] args) {
@@ -98,8 +98,8 @@ namespace Example.Avalonia {
             var text = $"{{ \"Execute\": \"{JsonEncodedText.Encode(functionName)}\", \"Arguments\": {JsonSerializer.Serialize(args)} }}";
             _ = WebServer.ServerApiStartup.SendWebSocketMessage(text);
         }
-        private void ReturnValue(float CallKey, object Value) {
-            var text = $"{{ \"ReturnValue\": \"{CallKey}\", \"Arguments\": {JsonSerializer.Serialize(Value)} }}";
+        private static void ReturnValue(float callKey, object Value) {
+            var text = $"{{ \"ReturnValue\": \"{callKey}\", \"Arguments\": {JsonSerializer.Serialize(Value)} }}";
             _ = WebServer.ServerApiStartup.SendWebSocketMessage(text);
         }
 #if DEBUG

@@ -23,7 +23,8 @@ namespace Example.Avalonia.WebServer {
         internal static string[] GetEmbeddedResourcePath(string resourceUrl) {
             if (ContainsAssemblyLocation(resourceUrl)) {
                 var indexOfPath = resourceUrl.IndexOf(AssemblyPathSeparator);
-                return resourceUrl.Substring(indexOfPath + 1).Split(new [] { PathSeparator }, StringSplitOptions.None);
+                return resourceUrl[(indexOfPath
+                    + 1)..].Split(new[] { PathSeparator }, StringSplitOptions.None);
             }
             var uriParts = resourceUrl.Split("/");
             return uriParts.Skip(1).Select(p => p.Replace(PathSeparator, "")).ToArray();

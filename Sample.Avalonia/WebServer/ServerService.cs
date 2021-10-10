@@ -29,8 +29,13 @@ namespace Sample.Avalonia.WebServer {
                 } else {
                     // static resources
                     PathString path = context.Request.Path;
-                    if (path.ToString().StartsWith($"/{reactViewResources}/{customResourcePath}/")) {
+                    string prefix = $"/{reactViewResources}/{customResourcePath}";
+                    if (path.StartsWithSegments(prefix)) {
                         // TODO TCS Handle custom resources (per view)
+                        var customPath = path.Value.Replace(prefix, "") + context.Request.QueryString;
+                        using Stream stream = ExtendedReactViewFactory.GetCustomResource(customPath, out string extension);
+                        context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
+                        await stream.CopyToAsync(context.Response.Body);
                     } else {
                         using Stream stream = ResourcesManager.TryGetResource(path, true, out string extension);
                         context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);

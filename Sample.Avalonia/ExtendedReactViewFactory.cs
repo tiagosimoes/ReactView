@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using System.Threading;
+using Microsoft.AspNetCore.Http;
 using ReactViewControl;
 using WebViewControl;
 using static Sample.Avalonia.WebServer.SerializedObject;
@@ -71,6 +73,11 @@ namespace Sample.Avalonia {
             }
             _ = WebServer.ServerApiStartup.SendWebSocketMessage(text);
             return true;
+        }
+
+        internal static Stream GetCustomResource(string path, out string extension) {
+            ReactViewRender.NativeAPI nativeAPI = (ReactViewRender.NativeAPI)RegisteredObjects.GetValueOrDefault("__NativeAPI__");
+            return nativeAPI.ViewRender.GetCustomResource(path, out extension);
         }
 
         public void ReceiveMessage(string text) {

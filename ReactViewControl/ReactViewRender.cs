@@ -10,7 +10,7 @@ using Xilium.CefGlue;
 
 namespace ReactViewControl {
 
-    internal partial class ReactViewRender : IChildViewHost, IDisposable {
+    public partial class ReactViewRender : IChildViewHost, IDisposable {
 
 #if DEBUG
         private static int counter;
@@ -54,7 +54,7 @@ namespace ReactViewControl {
                 MaxNativeMethodsParallelCalls = maxNativeMethodsParallelCalls
             };
 
-            NativeAPI.Initialize(this, registerWebJavaScriptObject, unregisterWebJavaScriptObject);
+            NativeAPI.Initialize(this, registerWebJavaScriptObject);
             Loader = new LoaderModule(this);
 
             DefaultStyleSheet = defaultStyleSheet;
@@ -488,7 +488,7 @@ namespace ReactViewControl {
         /// <returns></returns>
         private void HandleCustomResourceRequested(ResourceHandler resourceHandler) {
             var url = resourceHandler.Url;
-            
+
             if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Segments.Length > 1 && uri.Host.Equals(CustomResourceBaseUrl, StringComparison.InvariantCultureIgnoreCase)) {
                 var frameName = uri.Segments.ElementAt(1).TrimEnd(ResourceUrl.PathSeparator.ToCharArray());
                 if (frameName != null && Frames.TryGetValue(frameName, out var frame)) {
@@ -513,6 +513,26 @@ namespace ReactViewControl {
                     }
                 }
             }
+        }
+
+
+        public Stream GetCustomResource(string path, out string extension) {
+            Uri.TryCreate(path, UriKind.Relative, out var uri);
+            var frameName = path.Split('/')[1];
+            if (frameName != null && Frames.TryGetValue(frameName, out var frame)) {
+                var customResourceRequestedHandlers = GetCustomResourceHandlers(frame);
+                if (customResourceRequestedHandlers.Any()) {
+                    var queryString = path.Substring(path.IndexOf("?") + 1);
+                    var resourceKeyAndOptions = queryString.Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries).Select(p => Uri.UnescapeDataString(p));
+                    var resourceKey = resourceKeyAndOptions.FirstOrDefault();
+                    var options = resourceKeyAndOptions.Skip(1).ToArray();
+                    extension = Path.GetExtension(resourceKey);
+                    Resource response = customResourceRequestedHandlers.Select(h => h(resourceKeyAndOptions.FirstOrDefault(), options)).
+                        FirstOrDefault(r => r?.Content != null);
+                    return response.Content;
+                }
+            }
+            throw new NotImplementedException();
         }
 
         /// <summary>

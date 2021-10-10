@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Example.Avalonia.WebServer {
     class TypeDTO {
@@ -50,31 +48,49 @@ namespace Example.Avalonia.WebServer {
             return JsonSerializer.Serialize(serializedObject, new JsonSerializerOptions { IncludeFields = true, WriteIndented = true});
         }
 
-        public class MethodCall {
+        [Serializable]
+        public struct MethodCall {
             public string ObjectName;
             public string MethodName;
             public object Args;
+            public int CallKey;
         }
 
         public static MethodCall DeserializeMethodCall(string text) {
             return JsonSerializer.Deserialize<MethodCall>(text, new JsonSerializerOptions { IncludeFields = true });
         }
 
+        private static object GetJSONValue(JsonElement elem) {
+            return elem.ValueKind switch {
+                JsonValueKind.Null => null,
+                JsonValueKind.Number => elem.GetDouble(),
+                JsonValueKind.False => false,
+                JsonValueKind.True => true,
+                JsonValueKind.Undefined => null,
+                JsonValueKind.String => elem.GetString(),
+                JsonValueKind.Array => elem.EnumerateArray().Select(o => GetJSONValue(o)).ToArray(),
+                JsonValueKind.Object => throw new NotImplementedException(),
+                _ => throw new NotImplementedException(),
+            };
+            throw new NotImplementedException();
+        }
+
         internal static object ExecuteMethod(object obj, MethodCall methodCall) {
+            var method = obj.GetType().GetMethod(methodCall.MethodName);
+            object[] arguments = Array.Empty<object>();
             if (methodCall.Args is JsonElement elem) {
-                if(elem.ValueKind == JsonValueKind.String) {
-                    var method = obj.GetType().GetMethod(methodCall.MethodName);
-                    if (method.ReturnType == typeof(void)) {
-                        obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, new[] { elem.GetString() });
-                        return null;
-                    } else {
-                        throw new NotImplementedException(); //TODO TCS
-                    }
-                } else {
-                    throw new NotImplementedException(); //TODO TCS
+                if (elem.ValueKind == JsonValueKind.Array) {
+                    arguments = (object[]) GetJSONValue(elem);
+                } else {    
+                    arguments = new[] {GetJSONValue(elem) };
                 }
             }
-            throw new NotImplementedException();
+            if (method.ReturnType == typeof(void)) {
+                obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments);
+                return null;
+            } else {
+                return obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments);
+            }
         }
     }
 }

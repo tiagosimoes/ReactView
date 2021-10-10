@@ -1,4 +1,3 @@
-using System.Threading;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -8,8 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Example.Avalonia {
     public class App : Application {
-        public static ServiceProvider ServiceProvider;
+        private static ServiceProvider serviceProvider;
         public static ServiceCollection Services { get; set; } = new ServiceCollection();
+        public static ServiceProvider ServiceProvider { get => serviceProvider; set => serviceProvider = value; }
+
         public override void Initialize() {
             AvaloniaXamlLoader.Load(this);
  
@@ -20,9 +21,8 @@ namespace Example.Avalonia {
 
         public override void OnFrameworkInitializationCompleted() {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
-                ServerService.StartServer();
-                Thread.Sleep(1000);
                 desktop.MainWindow = new MainWindow();
+                ServerService.StartServer();
             }
             base.OnFrameworkInitializationCompleted();
         }

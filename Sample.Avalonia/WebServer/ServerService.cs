@@ -52,7 +52,7 @@ namespace Sample.Avalonia.WebServer {
         public static async System.Threading.Tasks.Task SendWebSocketMessage(string message) {
             var stream = Encoding.UTF8.GetBytes(message);
             while (webSocket == null) {
-                await Task.Delay(25);
+                await System.Threading.Tasks.Task.Delay(25);
             }
             await webSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
         }

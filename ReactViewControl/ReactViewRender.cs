@@ -55,7 +55,7 @@ namespace ReactViewControl {
                 MaxNativeMethodsParallelCalls = maxNativeMethodsParallelCalls
             };
 
-            NativeAPI.Initialize(this, registerWebJavaScriptObject, unregisterWebJavaScriptObject);
+            NativeAPI.Initialize(this, registerWebJavaScriptObject);
             Loader = new LoaderModule(this);
 
             DefaultStyleSheet = defaultStyleSheet;
@@ -499,22 +499,13 @@ namespace ReactViewControl {
             var url = resourceHandler.Url;
 
             if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Segments.Length > 1 && uri.Host.Equals(CustomResourceBaseUrl, StringComparison.InvariantCultureIgnoreCase)) {
-                var frameName = uri.Segments.ElementAt(1).TrimEnd(ResourceUrl.PathSeparator.ToCharArray());
-                if (frameName != null && Frames.TryGetValue(frameName, out var frame)) {
+                if (GetFrameNameFromURI(uri) is FrameInfo frame) {
                     var customResourceRequestedHandlers = GetCustomResourceHandlers(frame);
                     if (customResourceRequestedHandlers.Any()) {
                         resourceHandler.BeginAsyncResponse(() => {
-                            // get resource key from the query params
-                            var resourceKeyAndOptions = uri.Query.TrimStart('?').Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries).Select(p => Uri.UnescapeDataString(p));
-                            var resourceKey = resourceKeyAndOptions.FirstOrDefault();
-                            var options = resourceKeyAndOptions.Skip(1).ToArray();
-
                             // get response from first handler that returns a stream
-                            var response = customResourceRequestedHandlers.Select(h => h(resourceKey, options)).FirstOrDefault(r => r?.Content != null);
-
-                            if (response != null) {
-                                var extension = (response.Extension ?? Path.GetExtension(resourceKey)).TrimStart('.');
-                                resourceHandler.RespondWith(response.Content, extension);
+                            if (GetResource(customResourceRequestedHandlers, uri, out string extension) is Resource response) {
+                                resourceHandler.RespondWith(response.Content, (response.Extension ?? extension).TrimStart('.'));
                             } else {
                                 resourceHandler.RespondWith(MemoryStream.Null);
                             }
@@ -522,6 +513,22 @@ namespace ReactViewControl {
                     }
                 }
             }
+        }
+        private FrameInfo GetFrameNameFromURI(Uri uri) {
+            var frameName = uri.Segments.ElementAt(1).TrimEnd(ResourceUrl.PathSeparator.ToCharArray());
+            if (frameName != null && Frames.TryGetValue(frameName, out var frame)) {
+                return frame;
+            }
+            return null;
+        }
+
+        private static Resource GetResource(CustomResourceRequestedEventHandler[] customResourceRequestedHandlers, Uri uri, out string extension) {
+            // get resource key from the query params
+            var resourceKeyAndOptions = uri.Query.TrimStart('?').Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries).Select(p => Uri.UnescapeDataString(p));
+            var resourceKey = resourceKeyAndOptions.FirstOrDefault();
+            var options = resourceKeyAndOptions.Skip(1).ToArray();
+            extension = Path.GetExtension(resourceKey);
+            return customResourceRequestedHandlers.Select(h => h(resourceKeyAndOptions.FirstOrDefault(), options)).FirstOrDefault(r => r?.Content != null);
         }
 
         /// <summary>

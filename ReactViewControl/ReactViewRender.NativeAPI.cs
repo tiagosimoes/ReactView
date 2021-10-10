@@ -21,7 +21,7 @@ namespace ReactViewControl {
                 registerWebJavaScriptObject(NativeObjectName, this, null, false);
             }
 
-            public static void Initialize(ReactViewRender viewRender, Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject = null, Action<string> unregisterWebJavaScriptObject = null) {
+            public static void Initialize(ReactViewRender viewRender, Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject = null) {
                 new NativeAPI(viewRender, registerWebJavaScriptObject);
             }
 

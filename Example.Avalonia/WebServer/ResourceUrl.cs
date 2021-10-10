@@ -6,9 +6,6 @@ namespace Example.Avalonia.WebServer {
 
     public partial class ResourceUrl {
 
-        public const string LocalScheme = "local";
-        public const string CustomScheme = "custom";
-
         internal const string EmbeddedScheme = "embedded";
         internal const string PathSeparator = "/";
 

@@ -28,7 +28,7 @@ namespace Example.Avalonia {
 
         delegate object CallTargetMethod(Func<object> target);
         static readonly Dictionary<string, object> RegisteredObjects = new Dictionary<string, object>();
-        static readonly Dictionary<string, CallTargetMethod> registeredObjectInterceptMethods = new Dictionary<string, CallTargetMethod>();
+        static readonly Dictionary<string, CallTargetMethod> RegisteredObjectInterceptMethods = new Dictionary<string, CallTargetMethod>();
         private CountdownEvent JavascriptPendingCalls { get; } = new CountdownEvent(1);
 
         public override bool RegisterWebJavaScriptObject(string name, object objectToBind, Func<Func<object>, object> interceptCall, bool executeCallsInUI = false) {
@@ -65,7 +65,7 @@ namespace Example.Avalonia {
 
             var serializedObject = SerializeObject(objectToBind);
             RegisteredObjects[name] = objectToBind;
-            registeredObjectInterceptMethods[name] = CallTargetMethod;
+            RegisteredObjectInterceptMethods[name] = CallTargetMethod;
             var text = $"{{ \"RegisterObjectName\": \"{name}\", \"Object\": {serializedObject} }}";
             if (WebServer.ServerApiStartup.ProcessMessage == null) {
                 WebServer.ServerApiStartup.ProcessMessage = ReceiveMessage;
@@ -77,7 +77,7 @@ namespace Example.Avalonia {
         public void ReceiveMessage(string text) {
             var methodCall = DeserializeMethodCall(text);
             var obj = RegisteredObjects[methodCall.ObjectName];
-            var callTargetMethod = registeredObjectInterceptMethods[methodCall.ObjectName];
+            var callTargetMethod = RegisteredObjectInterceptMethods[methodCall.ObjectName];
             callTargetMethod(() => {
                 var result = ExecuteMethod(obj, methodCall);
                 if (obj.GetType().GetMethod(methodCall.MethodName).ReturnType != typeof(void)) {
@@ -98,8 +98,8 @@ namespace Example.Avalonia {
             var text = $"{{ \"Execute\": \"{JsonEncodedText.Encode(functionName)}\", \"Arguments\": {JsonSerializer.Serialize(args)} }}";
             _ = WebServer.ServerApiStartup.SendWebSocketMessage(text);
         }
-        private static void ReturnValue(float callKey, object Value) {
-            var text = $"{{ \"ReturnValue\": \"{callKey}\", \"Arguments\": {JsonSerializer.Serialize(Value)} }}";
+        private static void ReturnValue(float callKey, object value) {
+            var text = $"{{ \"ReturnValue\": \"{callKey}\", \"Arguments\": {JsonSerializer.Serialize(value)} }}";
             _ = WebServer.ServerApiStartup.SendWebSocketMessage(text);
         }
 #if DEBUG

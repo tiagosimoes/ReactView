@@ -9,6 +9,8 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using System.Linq;
+using Avalonia.Controls.ApplicationLifetimes;
 
 namespace Example.Avalonia.WebServer {
     public class ServerApiStartup {
@@ -23,14 +25,20 @@ namespace Example.Avalonia.WebServer {
             _ = app.Use(async (context, next) => {
                 if (context.WebSockets.IsWebSocketRequest) {
                     using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                    var socketFinishedTcs = new TaskCompletionSource<object>();
-                    BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
-                    await socketFinishedTcs.Task;
+                    var socketFinished = new TaskCompletionSource<object>();
+                    BackgroundSocketProcessor.AddSocket(webSocket, socketFinished);
+                    await socketFinished.Task;
                 } else {
                     // static resources
                     PathString path = context.Request.Path;
-                    if (path.ToString().StartsWith($"/{reactViewResources}/{customResourcePath}/")) {
+                    if (path.StartsWithSegments($"/{reactViewResources}/{customResourcePath}")) {
                         // TODO TCS Handle custom resources (per view)
+                        //var resourceKey = context.Request.Query.Keys.First();
+                        //var resource = path.Value.Replace($"/{reactViewResources}/{customResourcePath}", "").Trim('/');
+                        //var objs = ExtendedReactViewFactory.RegisteredObjects;
+                        //IClassicDesktopStyleApplicationLifetime desktop = App.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                        //MainWindow mainWindow = desktop.MainWindow as MainWindow;
+                        //ExtendedReactView view = (ExtendedReactView)mainWindow.SelectedView.Content;
                     } else {
                         using Stream stream = ResourcesManager.TryGetResource(path, true, out string extension);
                         context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
@@ -54,12 +62,15 @@ namespace Example.Avalonia.WebServer {
 
         private static WebSocket webSocket;
         internal class BackgroundSocketProcessor {
-            internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs) {
+            internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinished) {
                 webSocket = socket;
                 _ = OnWebSocketMessageReceived(socket);
             }
         }
-        public static Action<string> ProcessMessage; 
+        private static Action<string> processMessage;
+
+        public static Action<string> ProcessMessage { get => processMessage; set => processMessage = value; }
+
         private static async Task OnWebSocketMessageReceived(WebSocket webSocket) {
             var buffer = new byte[1024 * 4];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ReactViewControl {
@@ -9,11 +10,11 @@ namespace ReactViewControl {
         /// <summary>
         /// Methods of this class will be called by the loader inside the webview.
         /// </summary>
-        private class NativeAPI {
+        public class NativeAPI {
 
             public const string NativeObjectName = "__NativeAPI__";
 
-            private ReactViewRender ViewRender { get; }
+            public ReactViewRender ViewRender { get; }
 
             private NativeAPI(ReactViewRender viewRender, Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject = null) {
                 ViewRender = viewRender;

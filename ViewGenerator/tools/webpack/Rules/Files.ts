@@ -26,10 +26,11 @@ const getResourcesRuleSet = (assemblyName?: string, pluginsBase? : string): Rule
                         const buildUrl = (url: string, resourceBase: string): string => {
 
                             let idx: number = url.indexOf(`/${resourceBase}/`);
-                            if (idx < 0 && pluginsBase) {                       
+
+                            if (idx < 0 && pluginsBase) {
                                 idx = url.indexOf(`/${pluginsBase}/`);
                             }
-
+                            
                             // relative paths starting with ".." are replaced by "_"
                             if (url.startsWith("_")) {
                                 if (idx < 0) {
@@ -37,7 +38,6 @@ const getResourcesRuleSet = (assemblyName?: string, pluginsBase? : string): Rule
                                     throw new Error("VG001: Resource not found: using a resource from another namespace without an absolute URL.");
                                 }
 
-                                // URL (argument) is a relative path and contains the resource base path or the plugin assembly in its content
                                 return url.substring(idx);
                             }
 

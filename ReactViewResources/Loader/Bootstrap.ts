@@ -82,17 +82,19 @@ async function getReturnValue(callKey: number, methodCall:object): Promise<objec
                 var result = returnValues[callKey]
                 delete returnValues[callKey];
                 resolve(result);
-                if (interval != null) {
+                if (interval != 0) {
                     clearInterval(interval);
+                    interval = 0;
                 }
             }
         }, 10);
         setTimeout(() => {
-            if (interval != null) {
+            if (interval != 0) {
                 clearInterval(interval);
+                interval = 0;
                 throw "timeout after 10s waiting for " + JSON.stringify(methodCall); // TODO TCS Review this timeout
             }
-        }, 10000)
+        }, 5000)
     });
 }
 

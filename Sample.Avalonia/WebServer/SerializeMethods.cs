@@ -60,7 +60,7 @@ namespace Sample.Avalonia.WebServer {
             return JsonSerializer.Deserialize<MethodCall>(text, new JsonSerializerOptions { IncludeFields = true });
         }
 
-        private static object GetJSONValue(JsonElement elem) {
+        private static object GetJSONValue(JsonElement elem, Type type) {
             return elem.ValueKind switch {
                 JsonValueKind.Null => null,
                 JsonValueKind.Number => elem.GetDouble(),
@@ -68,8 +68,8 @@ namespace Sample.Avalonia.WebServer {
                 JsonValueKind.True => true,
                 JsonValueKind.Undefined => null,
                 JsonValueKind.String => elem.GetString(),
-                JsonValueKind.Array => elem.EnumerateArray().Select(o => GetJSONValue(o)).ToArray(),
-                JsonValueKind.Object => throw new NotImplementedException(),
+                JsonValueKind.Array => elem.EnumerateArray().Select(o => GetJSONValue(o, type)).ToArray(),
+                JsonValueKind.Object => JsonSerializer.Deserialize(elem.GetRawText(), type),
                 _ => throw new NotImplementedException(),
             };
             throw new NotImplementedException();
@@ -79,10 +79,11 @@ namespace Sample.Avalonia.WebServer {
             var method = obj.GetType().GetMethod(methodCall.MethodName);
             object[] arguments = Array.Empty<object>();
             if (methodCall.Args is JsonElement elem) {
+                var type = method.GetParameters().FirstOrDefault()?.ParameterType;
                 if (elem.ValueKind == JsonValueKind.Array) {
-                    arguments = (object[]) GetJSONValue(elem);
+                    arguments = (object[]) GetJSONValue(elem, type);
                 } else {    
-                    arguments = new[] {GetJSONValue(elem) };
+                    arguments = new[] {GetJSONValue(elem, type) };
                 }
             }
             if (method.ReturnType == typeof(void)) {

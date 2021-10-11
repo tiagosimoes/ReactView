@@ -62,15 +62,15 @@ namespace Sample.Avalonia.WebServer {
 
         private static object GetJSONValue(JsonElement elem, Type type) {
             return elem.ValueKind switch {
-                JsonValueKind.Null => null,
-                JsonValueKind.Number => elem.GetDouble(),
-                JsonValueKind.False => false,
-                JsonValueKind.True => true,
-                JsonValueKind.Undefined => null,
-                JsonValueKind.String => elem.GetString(),
+                //JsonValueKind.Null => null,
+                //JsonValueKind.Number => JsonSerializer.Deserialize(elem.GetRawText(), type),
+                //JsonValueKind.False => false,
+                //JsonValueKind.True => true,
+                //JsonValueKind.Undefined => null,
+                //JsonValueKind.String => elem.GetString(),
                 JsonValueKind.Array => elem.EnumerateArray().Select(o => GetJSONValue(o, type)).ToArray(),
-                JsonValueKind.Object => JsonSerializer.Deserialize(elem.GetRawText(), type),
-                _ => throw new NotImplementedException(),
+                //JsonValueKind.Object => JsonSerializer.Deserialize(elem.GetRawText(), type),
+                _ => JsonSerializer.Deserialize(elem.GetRawText(), type),
             };
             throw new NotImplementedException();
         }

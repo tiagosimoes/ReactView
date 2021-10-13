@@ -39,6 +39,7 @@ function onWebSocketMessageReceived(event) {
             break;
         case "UnregisterObjectName":
             delete window[objectNameValue];
+            break;
         case "Execute":
             execute(objectNameValue, object.Arguments)
             break;

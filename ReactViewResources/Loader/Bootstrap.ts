@@ -92,9 +92,9 @@ async function getReturnValue(callKey: number, methodCall:object): Promise<objec
             if (interval != 0) {
                 clearInterval(interval);
                 interval = 0;
-                throw "timeout after 10s waiting for " + JSON.stringify(methodCall); // TODO TCS Review this timeout
+                throw "timeout after 30s waiting for " + JSON.stringify(methodCall); // TODO TCS Review this timeout
             }
-        }, 5000)
+        }, 30000)
     });
 }
 

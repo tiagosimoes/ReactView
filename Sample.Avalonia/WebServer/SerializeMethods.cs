@@ -62,14 +62,9 @@ namespace Sample.Avalonia.WebServer {
 
         private static object GetJSONValue(JsonElement elem, Type type) {
             return elem.ValueKind switch {
-                //JsonValueKind.Null => null,
-                //JsonValueKind.Number => JsonSerializer.Deserialize(elem.GetRawText(), type),
-                //JsonValueKind.False => false,
-                //JsonValueKind.True => true,
-                //JsonValueKind.Undefined => null,
-                //JsonValueKind.String => elem.GetString(),
-                JsonValueKind.Array => elem.EnumerateArray().Select(o => GetJSONValue(o, type)).ToArray(),
-                //JsonValueKind.Object => JsonSerializer.Deserialize(elem.GetRawText(), type),
+                JsonValueKind.Null => null,
+                JsonValueKind.False => false,
+                JsonValueKind.True => true,
                 _ => JsonSerializer.Deserialize(elem.GetRawText(), type),
             };
             throw new NotImplementedException();
@@ -77,20 +72,20 @@ namespace Sample.Avalonia.WebServer {
 
         internal static object ExecuteMethod(object obj, MethodCall methodCall) {
             var method = obj.GetType().GetMethod(methodCall.MethodName);
-            object[] arguments = Array.Empty<object>();
+            List<object> arguments = new List<object>();
             if (methodCall.Args is JsonElement elem) {
-                var type = method.GetParameters().FirstOrDefault()?.ParameterType;
-                if (elem.ValueKind == JsonValueKind.Array) {
-                    arguments = (object[]) GetJSONValue(elem, type);
-                } else {    
-                    arguments = new[] {GetJSONValue(elem, type) };
+                if (method.GetParameters().Length > 0) {
+                    foreach (var item in elem.EnumerateArray().Select((value, index) => new { index, value })) {
+                        var parameter = method.GetParameters()[item.index];
+                        arguments.Add(GetJSONValue(item.value, parameter.ParameterType));
+                    }
                 }
             }
             if (method.ReturnType == typeof(void)) {
-                obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments);
+                obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray());
                 return null;
             } else {
-                return obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments);
+                return obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray());
             }
         }
     }

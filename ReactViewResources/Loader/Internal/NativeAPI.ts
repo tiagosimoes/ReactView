@@ -31,7 +31,7 @@ export async function bindNativeObject<T>(nativeObjectName: string): Promise<T> 
 var hasWaited = false;
 
 async function getRegisteredObject(nativeObjectName) {
-    if (!hasWaited) {
+    while (!hasWaited || window[nativeObjectName] == undefined) {
         await sleep(2000); //TODO TCS: Not really sure why we need to wait for this to start the first time
         hasWaited = true;
     }

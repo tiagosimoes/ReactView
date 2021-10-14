@@ -9,14 +9,18 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Sample.Avalonia.WebServer {
     public class ServerApiStartup {
-
+        public void ConfigureServices(IServiceCollection services) {
+            services.AddResponseCompression();
+        }
         public void Configure(IApplicationBuilder app) {
             //app.UseSession();
             //app.UseHttpsRedirection();
-            string server = "http://localhost:8080";
+            app.UseResponseCompression();
+            string server = "http://localhost";
             string reactViewResources = "ReactViewResources";
             string customResourcePath = "custom/resource";
             app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromMinutes(15) });  // TODO TCS Review this timeout
@@ -37,9 +41,11 @@ namespace Sample.Avalonia.WebServer {
                         context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
                         await stream.CopyToAsync(context.Response.Body);
                     } else {
-                        using Stream stream = ResourcesManager.TryGetResource(path, true, out string extension);
-                        context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
-                        await stream.CopyToAsync(context.Response.Body);
+                        if (path != "/favicon.ico") {
+                            using Stream stream = ResourcesManager.TryGetResource(path, true, out string extension);
+                            context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
+                            await stream.CopyToAsync(context.Response.Body);
+                        }
                     }
                 }
             });
@@ -89,7 +95,7 @@ namespace Sample.Avalonia.WebServer {
         public void RestartServer() {
             StopServer();
             server = WebHost.CreateDefaultBuilder().UseKestrel(x => {
-                var PortNumber = 8080;
+                var PortNumber = 80;
                 x.ListenAnyIP(PortNumber);
                 x.ListenLocalhost(PortNumber);
             }).UseStartup<ServerApiStartup>().UseDefaultServiceProvider((b, o) => {

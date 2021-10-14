@@ -77,7 +77,15 @@ namespace Sample.Avalonia.WebServer {
                 if (method.GetParameters().Length > 0) {
                     foreach (var item in elem.EnumerateArray().Select((value, index) => new { index, value })) {
                         var parameter = method.GetParameters()[item.index];
-                        arguments.Add(GetJSONValue(item.value, parameter.ParameterType));
+                        if (item.value.ValueKind == JsonValueKind.Array && !parameter.ParameterType.IsArray) {
+                            foreach (var subitem in item.value.EnumerateArray().Select((value, index) => new { index, value })) {
+                                var subparameter = method.GetParameters()[subitem.index];
+                                arguments.Add(GetJSONValue(subitem.value, subparameter.ParameterType));
+                            }
+                            break;
+                        } else {
+                            arguments.Add(GetJSONValue(item.value, parameter.ParameterType));
+                        }
                     }
                 }
             }

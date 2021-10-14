@@ -12,14 +12,13 @@ namespace ReactViewControl {
         /// </summary>
         public class NativeAPI {
 
-            public const string NativeObjectName = "__NativeAPI__";
+            private const string NativeObjectName = "__NativeAPI__";
 
             public ReactViewRender ViewRender { get; }
 
             private NativeAPI(ReactViewRender viewRender, Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject = null) {
                 ViewRender = viewRender;
-                ViewRender.WebView.RegisterJavascriptObject(NativeObjectName, this);
-                registerWebJavaScriptObject(NativeObjectName, this, null, false);
+                registerWebJavaScriptObject(NativeObjectName + GetHashCode(), this, null, false);
             }
 
             public static void Initialize(ReactViewRender viewRender, Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject = null) {
@@ -35,10 +34,6 @@ namespace ReactViewControl {
                     frame.LoadStatus = LoadStatus.ViewInitialized;
 
                     if (frame.IsMain) {
-                        // from now on we have to watch for js context released
-                        ViewRender.WebView.JavascriptContextReleased -= ViewRender.OnWebViewJavascriptContextReleased;
-                        ViewRender.WebView.JavascriptContextReleased += ViewRender.OnWebViewJavascriptContextReleased;
-
                         // only need to load the stylesheet for the main frame
                         LoadStyleSheet();
                     }

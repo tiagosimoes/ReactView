@@ -38,7 +38,6 @@ namespace ReactViewControl {
 
         protected override void OnGotFocus(GotFocusEventArgs e) {
             e.Handled = true;
-            WebView.Focus();
         }
 
         protected override void OnPropertyChanged<T>(AvaloniaPropertyChangedEventArgs<T> change) {

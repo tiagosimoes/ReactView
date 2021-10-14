@@ -130,7 +130,6 @@ namespace ReactViewControl {
                 // using setimeout we make sure the function is already defined
                 var loaderUrl = new ResourceUrl(ResourcesAssembly, ReactViewResources.Resources.LoaderUrl);
                 var script = $"import('{loaderUrl}').then(m => m.default.{LoaderModuleName}).then({LoaderModuleName} => {LoaderModuleName}.{functionName}({string.Join(",", args)}))";
-                ViewRender.WebView.ExecuteScript(script);
                 ViewRender.executeWebScriptFunctionWithSerializedParams(script, null);
             }
 

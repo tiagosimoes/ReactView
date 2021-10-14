@@ -22,9 +22,8 @@ namespace ReactViewControl {
         public void ExecuteMethod(IViewModule module, string methodCall, params object[] args) {
             module.Host?.HandledBeforeExecuteMethod();
 
-            if (webView != null) {
+            if (executeWebScriptFunctionWithSerializedParams != null) {
                 var method = FormatMethodInvocation(module, methodCall);
-                webView.ExecuteScriptFunctionWithSerializedParams(method, args);
                 executeWebScriptFunctionWithSerializedParams(method, args);
             } else {
                 PendingExecutions.Enqueue(Tuple.Create(module, methodCall, args));
@@ -34,11 +33,12 @@ namespace ReactViewControl {
         public T EvaluateMethod<T>(IViewModule module, string methodCall, params object[] args) => EvaluateMethodAsync<T>(module, methodCall, args).Result;
 
         public Task<T> EvaluateMethodAsync<T>(IViewModule module, string methodCall, params object[] args) {
-            if (webView == null) {
+            if (executeWebScriptFunctionWithSerializedParams == null) {
                 return Task.FromResult<T>(default);
             }
             module.Host?.HandledBeforeExecuteMethod();
             var method = FormatMethodInvocation(module, methodCall);
+            //TODO TCS Review this
             return webView.EvaluateScriptFunctionWithSerializedParams<T>(method, args);
         }
 
@@ -50,7 +50,6 @@ namespace ReactViewControl {
             while (true) {
                 if (PendingExecutions.TryDequeue(out var pendingScript)) {
                     var method = FormatMethodInvocation(pendingScript.Item1, pendingScript.Item2);
-                    webView.ExecuteScriptFunctionWithSerializedParams(method, pendingScript.Item3);
                     executeWebScriptFunctionWithSerializedParams(method, pendingScript.Item3);
                 } else {
                     // nothing else to execute

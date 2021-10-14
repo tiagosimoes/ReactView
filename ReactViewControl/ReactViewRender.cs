@@ -46,50 +46,14 @@ namespace ReactViewControl {
             this.unregisterWebJavaScriptObject = unregisterWebJavaScriptObject;
             this.executeWebScriptFunctionWithSerializedParams = executeWebScriptFunctionWithSerializedParams;
 
-            // must useSharedDomain for the local storage to be shared
-            WebView = new ExtendedWebView(useSharedDomain: true) {
-                DisableBuiltinContextMenus = true,
-                IsSecurityDisabled = true,
-                IgnoreMissingResources = false,
-                IsHistoryDisabled = true,
-                MaxNativeMethodsParallelCalls = maxNativeMethodsParallelCalls
-            };
 
             NativeAPI.Initialize(this, registerWebJavaScriptObject);
             Loader = new LoaderModule(this);
 
             DefaultStyleSheet = defaultStyleSheet;
             PluginsFactory = initializePlugins;
-            EnableDebugMode = enableDebugMode;
-            DevServerUri = devServerUri;
-
             GetOrCreateFrame(FrameInfo.MainViewFrameName); // creates the main frame
 
-            WebView.Disposed += Dispose;
-            WebView.BeforeNavigate += OnWebViewBeforeNavigate;
-            WebView.BeforeResourceLoad += OnWebViewBeforeResourceLoad;
-            WebView.LoadFailed += OnWebViewLoadFailed;
-            WebView.FilesDragging += fileNames => FilesDragging?.Invoke(fileNames);
-            WebView.TextDragging += textContent => TextDragging?.Invoke(textContent);
-            WebView.KeyPressed += OnWebViewKeyPressed;
-
-            ExtraInitialize();
-
-            var urlParams = new string[] {
-                new ResourceUrl(ResourcesAssembly).ToString(),
-                enableDebugMode ? "true" : "false",
-                ExecutionEngine.ModulesObjectName,
-                NativeAPI.NativeObjectName,
-                ResourceUrl.CustomScheme +  Uri.SchemeDelimiter + CustomResourceBaseUrl
-            };
-
-            WebView.LoadResource(new ResourceUrl(ResourcesAssembly, ReactViewResources.Resources.DefaultUrl + "?" + string.Join("&", urlParams)));
-
-            if (preloadWebView) {
-                PreloadWebView();
-            }
-
-            EditCommands = new EditCommands(WebView);
         }
 
         partial void ExtraInitialize();
@@ -103,7 +67,7 @@ namespace ReactViewControl {
         /// </summary>
         public bool IsHotReloadEnabled => DevServerUri != null;
 
-        public bool IsDisposing => WebView.IsDisposing;
+        public bool IsDisposing => false;// WebView.IsDisposing;
 
         /// <summary>
         /// True when the main component has been rendered.
@@ -227,14 +191,13 @@ namespace ReactViewControl {
         }
 
         public void Dispose() {
-            WebView.Dispose();
         }
 
         /// <summary>
         /// Initialize the underlying webview if has been initialized yet.
         /// </summary>
         public void EnsureInitialized() {
-            if (!WebView.IsBrowserInitialized) {
+            if (WebView != null && !WebView.IsBrowserInitialized) {
                 PreloadWebView();
             }
         }
@@ -535,10 +498,15 @@ namespace ReactViewControl {
                     var resourceKeyAndOptions = queryString.Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries).Select(p => Uri.UnescapeDataString(p));
                     var resourceKey = resourceKeyAndOptions.FirstOrDefault();
                     var options = resourceKeyAndOptions.Skip(1).ToArray();
-                    extension = Path.GetExtension(resourceKey);
                     Resource response = customResourceRequestedHandlers.Select(h => h(resourceKeyAndOptions.FirstOrDefault(), options)).
-                        FirstOrDefault(r => r?.Content != null);
-                    return response.Content;
+                        FirstOrDefault(r => r?.Content != null && r.Content.CanRead);
+                    if (response != null) {
+                        extension = (response.Extension ?? Path.GetExtension(resourceKey)).TrimStart('.');
+                        return response.Content;
+                    } else {
+                        extension = "";
+                        return MemoryStream.Null;
+                    }
                 }
             }
             throw new NotImplementedException();
@@ -552,7 +520,6 @@ namespace ReactViewControl {
         /// <param name="forceNativeSyncCalls"></param>
         private void RegisterNativeObject(IViewModule module, FrameInfo frame) {
             var nativeObjectName = module.GetNativeObjectFullName(frame.Name);
-            WebView.RegisterJavascriptObject(nativeObjectName, module.CreateNativeObject(), interceptCall: CallNativeMethod, executeCallsInUI: false);
             registerWebJavaScriptObject(nativeObjectName, module.CreateNativeObject(), /*interceptCall*/ CallNativeMethod, /*executeCallsInUI*/ false);
         }
 
@@ -571,7 +538,6 @@ namespace ReactViewControl {
         /// <param name="frameName"></param>
         private void UnregisterNativeObject(IViewModule module, FrameInfo frame) {
             var nativeObjectName = module.GetNativeObjectFullName(frame.Name);
-            WebView.UnregisterJavascriptObject(nativeObjectName);
             unregisterWebJavaScriptObject(nativeObjectName);
         }
 

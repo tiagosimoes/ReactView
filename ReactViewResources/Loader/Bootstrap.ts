@@ -1,5 +1,5 @@
 ﻿import { waitForDOMReady } from "./Internal/Common";
-import { libsPath, mainFrameName, webViewRootId } from "./Internal/Environment";
+import { libsPath, mainFrameName, webViewRootId, nativeAPIObjectName } from "./Internal/Environment";
 import { loadScript } from "./Internal/ResourcesLoader";
 import { newView, ViewMetadata } from "./Internal/ViewMetadata";
 
@@ -46,10 +46,29 @@ function onWebSocketMessageReceived(event) {
         case "ReturnValue":
             returnValues[objectNameValue] = object.Arguments;
             break;
+        case "OpenURL":
+            window.open(objectNameValue, "_blank")?.focus();
+            break;
+        case "OpenURLInPopup":
+            OpenURLInPopup(objectNameValue);
+            break;
         default:
             throw "NotImplemented";
     }
 }
+
+function OpenURLInPopup(url) {
+    var ifrm = document.createElement("iframe");
+    ifrm.setAttribute("src", url);
+    ifrm.style.width = "50vw";
+    ifrm.style.height = "50vh";
+    ifrm.style.position = "fixed";
+    ifrm.style.top = "25vh";
+    ifrm.style.left = "25vw";
+    document.body.appendChild(ifrm);
+    ifrm.focus();
+}
+
 function execute(script, args) {
     if (args != null) {
         eval(script + "(" + JSON.stringify(args) + ")");
@@ -64,7 +83,7 @@ function registerObject(registerObjectName: string, object: any) {
     object.methods.forEach(function (method) {
         if (method["ReturnType"].ClassName != "System.Void") {
             windowObject[lowerFirstLetter(method["MethodName"])] = async function (...theArgs) {
-                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: theArgs, CallKey: Math.round(Math.random() * 10000) };
+                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: theArgs, CallKey: Math.round(Math.random() * 1000000) };
                 window["websocket"].send(JSON.stringify(methodCall));
                 return await getReturnValue(methodCall.CallKey, methodCall);
             }
@@ -108,7 +127,7 @@ async function setWebSocketsConnection(): Promise<WebSocket> {
     return new Promise<WebSocket>((resolve) => {
         if (document.location.protocol.startsWith("http")) {
             var docLocation = document.location;
-            var webSocketLocation = docLocation.protocol.replace("http", "ws") + "//" + docLocation.host + "/ws";
+            var webSocketLocation = docLocation.protocol.replace("http", "ws") + "//" + docLocation.host + "/" + nativeAPIObjectName;
             var webSocket = new WebSocket(webSocketLocation);
             webSocket.onopen = function () {
                 resolve(webSocket);

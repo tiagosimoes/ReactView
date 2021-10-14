@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -13,6 +16,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Sample.Avalonia.WebServer {
     public class ServerApiStartup {
+        readonly static string server = "http://localhost";
+        readonly static string reactViewResources = "ReactViewResources";
+        readonly static string customResourcePath = "custom/resource";
+
         public void ConfigureServices(IServiceCollection services) {
             services.AddResponseCompression();
         }
@@ -20,24 +27,22 @@ namespace Sample.Avalonia.WebServer {
             //app.UseSession();
             //app.UseHttpsRedirection();
             app.UseResponseCompression();
-            string server = "http://localhost";
-            string reactViewResources = "ReactViewResources";
-            string customResourcePath = "custom/resource";
             app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromMinutes(15) });  // TODO TCS Review this timeout
             _ = app.Use(async (context, next) => {
                 if (context.WebSockets.IsWebSocketRequest) {
                     using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
                     var socketFinishedTcs = new TaskCompletionSource<object>();
-                    BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
+                    AddSocket(webSocket, socketFinishedTcs);
                     await socketFinishedTcs.Task;
                 } else {
                     // static resources
                     PathString path = context.Request.Path;
                     string prefix = $"/{reactViewResources}/{customResourcePath}";
                     if (path.StartsWithSegments(prefix)) {
-                        // TODO TCS Handle custom resources (per view)
                         var customPath = path.Value.Replace(prefix, "") + context.Request.QueryString;
-                        using Stream stream = ExtendedReactViewFactory.GetCustomResource(customPath, out string extension);
+                        string referer = context.Request.Headers["Referer"];
+                        var nativeobjectname = referer.Split('&')[3];
+                        using Stream stream = NativeObjects[nativeobjectname].GetCustomResource(customPath, out string extension);
                         context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
                         await stream.CopyToAsync(context.Response.Body);
                     } else {
@@ -49,40 +54,33 @@ namespace Sample.Avalonia.WebServer {
                     }
                 }
             });
+        }
+
+        readonly static Dictionary<string, ExtendedReactViewFactory> NativeObjects = new Dictionary<string, ExtendedReactViewFactory>();
+
+        internal static void NewNativeObject(string name, ExtendedReactViewFactory extendedReactViewFactory) {
+            NativeObjects[name] = extendedReactViewFactory;
             // Just to test
-            string url = $"{server}/{reactViewResources}/index.html?./&true&__Modules__&__NativeAPI__&{customResourcePath}";
-            url = url.Replace("&", "^&");
-            Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
-        }
-
-        public static async System.Threading.Tasks.Task SendWebSocketMessage(string message) {
-            var stream = Encoding.UTF8.GetBytes(message);
-            while (webSocket == null) {
-                await System.Threading.Tasks.Task.Delay(25);
-            }
-            await webSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
-
-        private static WebSocket webSocket;
-        internal class BackgroundSocketProcessor {
-            internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs) {
-                webSocket = socket;
-                _ = OnWebSocketMessageReceived(socket);
+            string url = $"{server}/{reactViewResources}/index.html?./&true&__Modules__&{name}&{customResourcePath}";
+            if (NativeObjects.Count == 1) {
+                url = url.Replace("&", "^&");
+                Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
+            } else {
+                var text = $"{{ \"OpenURLInPopup\": \"{JsonEncodedText.Encode(url)}\", \"Arguments\":[] }}";
+                var stream = Encoding.UTF8.GetBytes(text);
+                _ = lastSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
             }
         }
-        public static Action<string> ProcessMessage; 
-        private static async System.Threading.Tasks.Task OnWebSocketMessageReceived(WebSocket webSocket) {
-            var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            while (!result.CloseStatus.HasValue) {
-                var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                ProcessMessage(text);
-                //await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
 
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            }
-            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+        public static WebSocket NextWebSocket;
+
+        private static WebSocket lastSocket;
+
+        internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs) {
+            NextWebSocket = socket;
+            lastSocket = socket;
         }
+
     }
 
     internal class ServerService {

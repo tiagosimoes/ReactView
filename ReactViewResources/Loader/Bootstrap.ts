@@ -71,7 +71,11 @@ function OpenURLInPopup(url) {
 
 function execute(script, args) {
     if (args != null) {
-        eval(script + "(" + JSON.stringify(args) + ")");
+        if (Array.isArray(args)) {
+            eval(script + "(" + args.map(arg => JSON.stringify(arg)).join(",") + ")");
+        } else {
+            eval(script + "(" + JSON.stringify(args) + ")");
+        }
     } else {
         eval(script);
     }

@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Linq;
-using System.Reflection;
 
-namespace Sample.Avalonia.WebServer {
+namespace ReactViewControl.WebServer {
 
-    public partial class ResourceUrl {
+    static class ResourceUrls {
 
         internal const string EmbeddedScheme = "embedded";
         internal const string PathSeparator = "/";
@@ -20,10 +19,10 @@ namespace Sample.Avalonia.WebServer {
         internal static string[] GetEmbeddedResourcePath(string resourceUrl) {
             if (ContainsAssemblyLocation(resourceUrl)) {
                 var indexOfPath = resourceUrl.IndexOf(AssemblyPathSeparator);
-                return resourceUrl[(indexOfPath
-                    + 1)..].Split(new[] { PathSeparator }, StringSplitOptions.None);
+                return resourceUrl.Substring(indexOfPath + 1).Split('/');
+
             }
-            var uriParts = resourceUrl.Split("/");
+            var uriParts = resourceUrl.Split('/');
             return uriParts.Skip(1).Select(p => p.Replace(PathSeparator, "")).ToArray();
         }
 
@@ -33,7 +32,7 @@ namespace Sample.Avalonia.WebServer {
                 var indexOfPath = Math.Max(0, resourcePath.IndexOf(AssemblyPathSeparator));
                 return resourcePath.Substring(0, indexOfPath);
             }
-            var segments = resourceUrl.Split("/");
+            var segments = resourceUrl.Split('/');
             if (segments.Length > 1) {
                 var assemblySegment = segments[1];
                 return assemblySegment.EndsWith(PathSeparator) ? assemblySegment.Substring(0, assemblySegment.Length - PathSeparator.Length) : assemblySegment; // default assembly name to the first path

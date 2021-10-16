@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using ReactViewControl.WebServer;
 
 namespace ReactViewControl {
 
@@ -10,8 +11,7 @@ namespace ReactViewControl {
 
         private string id;
         private string frameName;
-        private ExtendedWebView webView;
-        private Action<string, object[]> executeWebScriptFunctionWithSerializedParams;
+        private ServerView serverView;
 
         private ConcurrentQueue<Tuple<IViewModule, string, object[]>> PendingExecutions { get; } = new ConcurrentQueue<Tuple<IViewModule, string, object[]>>();
 
@@ -22,9 +22,9 @@ namespace ReactViewControl {
         public void ExecuteMethod(IViewModule module, string methodCall, params object[] args) {
             module.Host?.HandledBeforeExecuteMethod();
 
-            if (executeWebScriptFunctionWithSerializedParams != null) {
+            if (serverView != null) {
                 var method = FormatMethodInvocation(module, methodCall);
-                executeWebScriptFunctionWithSerializedParams(method, args);
+                serverView.ExecuteWebScriptFunctionWithSerializedParams(method, args);
             } else {
                 PendingExecutions.Enqueue(Tuple.Create(module, methodCall, args));
             }
@@ -33,24 +33,24 @@ namespace ReactViewControl {
         public T EvaluateMethod<T>(IViewModule module, string methodCall, params object[] args) => EvaluateMethodAsync<T>(module, methodCall, args).Result;
 
         public Task<T> EvaluateMethodAsync<T>(IViewModule module, string methodCall, params object[] args) {
-            if (executeWebScriptFunctionWithSerializedParams == null) {
+            if (serverView == null) {
                 return Task.FromResult<T>(default);
             }
             module.Host?.HandledBeforeExecuteMethod();
             var method = FormatMethodInvocation(module, methodCall);
             //TODO TCS Review this
-            return webView.EvaluateScriptFunctionWithSerializedParams<T>(method, args);
+            throw new NotImplementedException();
+            //return webView.EvaluateScriptFunctionWithSerializedParams<T>(method, args);
         }
 
-        public void Start(ExtendedWebView webView, string frameName, string id, Action<string, object[]> executeWebScriptFunctionWithSerializedParams) {
+        public void Start(ServerView serverView, string frameName, string id) {
             this.id = id;
             this.frameName = frameName;
-            this.webView = webView;
-            this.executeWebScriptFunctionWithSerializedParams = executeWebScriptFunctionWithSerializedParams;
+            this.serverView = serverView;
             while (true) {
                 if (PendingExecutions.TryDequeue(out var pendingScript)) {
                     var method = FormatMethodInvocation(pendingScript.Item1, pendingScript.Item2);
-                    executeWebScriptFunctionWithSerializedParams(method, pendingScript.Item3);
+                    serverView.ExecuteWebScriptFunctionWithSerializedParams(method, pendingScript.Item3);
                 } else {
                     // nothing else to execute
                     break;

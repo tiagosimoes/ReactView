@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace ReactViewControl {
@@ -16,13 +14,13 @@ namespace ReactViewControl {
 
             public ReactViewRender ViewRender { get; }
 
-            private NativeAPI(ReactViewRender viewRender, Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject = null) {
+            private NativeAPI(ReactViewRender viewRender) {
                 ViewRender = viewRender;
-                registerWebJavaScriptObject(NativeObjectName + GetHashCode(), this, null, false);
+                viewRender.ServerView.RegisterWebJavaScriptObject(NativeObjectName + GetHashCode(), this, null, false);
             }
 
-            public static void Initialize(ReactViewRender viewRender, Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject = null) {
-                new NativeAPI(viewRender, registerWebJavaScriptObject);
+            public static void Initialize(ReactViewRender viewRender) {
+                new NativeAPI(viewRender);
             }
 
             /// <summary>
@@ -56,7 +54,7 @@ namespace ReactViewControl {
                     System.Diagnostics.Debug.WriteLine($"View '{frameName}' loaded (id: '{id}')");
 #endif
                     // start component execution engine
-                    frame.ExecutionEngine.Start(ViewRender.WebView, frameName, id, ViewRender.executeWebScriptFunctionWithSerializedParams);
+                    frame.ExecutionEngine.Start(ViewRender.ServerView, frameName, id);
 
                     if (frame.IsMain) {
                         ReactView.AsyncExecuteInUI(() => ViewRender.Ready?.Invoke(), false);

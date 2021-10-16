@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using Avalonia.Threading;
 
-namespace Sample.Avalonia.WebServer {
+namespace ReactViewControl.WebServer {
     class TypeDTO {
         public string AssemblyName;
         public string ClassName;
@@ -50,9 +51,13 @@ namespace Sample.Avalonia.WebServer {
 
         [Serializable]
         public struct MethodCall {
+#pragma warning disable CS0649
             public string ObjectName;
+#pragma warning disable CS0649
             public string MethodName;
+#pragma warning disable CS0649
             public object Args;
+#pragma warning disable CS0649
             public int CallKey;
         }
 
@@ -61,11 +66,15 @@ namespace Sample.Avalonia.WebServer {
         }
 
         private static object GetJSONValue(JsonElement elem, Type type) {
-            return elem.ValueKind switch {
-                JsonValueKind.Null => null,
-                JsonValueKind.False => false,
-                JsonValueKind.True => true,
-                _ => JsonSerializer.Deserialize(elem.GetRawText(), type),
+            switch (elem.ValueKind) {
+                case JsonValueKind.Null:
+                    return null;
+                case JsonValueKind.False:
+                    return false;
+                case JsonValueKind.True:
+                    return true;
+                default:
+                    return JsonSerializer.Deserialize(elem.GetRawText(), type);
             };
             throw new NotImplementedException();
         }
@@ -90,11 +99,22 @@ namespace Sample.Avalonia.WebServer {
                 }
             }
             if (method.ReturnType == typeof(void)) {
-                obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray());
+                AsyncExecuteInUIThread(() => {
+                    obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray());
+                });
                 return null;
             } else {
                 return obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray());
             }
         }
+
+        private static void AsyncExecuteInUIThread(Action action) {
+            if (Dispatcher.UIThread.CheckAccess()) {
+                action();
+                return;
+            }
+            Dispatcher.UIThread.InvokeAsync(action);
+        }
+
     }
 }

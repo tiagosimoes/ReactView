@@ -4,8 +4,8 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Sample.Avalonia.WebServer {
-    internal class AssemblyCache {
+namespace ReactViewControl.WebServer {
+    class AssemblyCache {
 
         private object SyncRoot { get; } = new object();
         private Dictionary<string, Assembly> assemblies;
@@ -21,7 +21,7 @@ namespace Sample.Avalonia.WebServer {
                 }
             }
 
-            var assemblyName = ResourceUrl.GetEmbeddedResourceAssemblyName(path);
+            var assemblyName = ResourceUrls.GetEmbeddedResourceAssemblyName(path);
             var assembly = GetAssemblyByName(assemblyName);
 
             if (assembly == null) {

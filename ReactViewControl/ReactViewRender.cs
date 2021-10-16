@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using ReactViewControl.WebServer;
 using WebViewControl;
 using Xilium.CefGlue;
 
@@ -27,6 +28,8 @@ namespace ReactViewControl {
         private Dictionary<string, WeakReference<FrameInfo>> RecoverableFrames { get; } = new Dictionary<string, WeakReference<FrameInfo>>();
 
         private ExtendedWebView WebView { get; }
+        private ServerView ServerView { get; }
+
         private Assembly UserCallingAssembly { get; }
         private LoaderModule Loader { get; }
         private Func<IViewModule[]> PluginsFactory { get; }
@@ -34,20 +37,12 @@ namespace ReactViewControl {
         private bool enableDebugMode;
         private ResourceUrl defaultStyleSheet;
         private bool isInputDisabled; // used primarly to control the intention to disable input (before the browser is ready)
-        private readonly Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject;
-        private readonly Action<string> unregisterWebJavaScriptObject;
-        private readonly Action<string, object[]> executeWebScriptFunctionWithSerializedParams;
 
 
-        public ReactViewRender(ResourceUrl defaultStyleSheet, Func<IViewModule[]> initializePlugins, bool preloadWebView, int maxNativeMethodsParallelCalls, bool enableDebugMode, Uri devServerUri = null, Func<string, object, Func<Func<object>, object>, bool, bool> registerWebJavaScriptObject = null, Action<string> unregisterWebJavaScriptObject = null, Action<string, object[]> executeWebScriptFunctionWithSerializedParams = null) {
+        public ReactViewRender(ResourceUrl defaultStyleSheet, Func<IViewModule[]> initializePlugins, bool preloadWebView, int maxNativeMethodsParallelCalls, bool enableDebugMode, Uri devServerUri = null) {
             UserCallingAssembly = GetUserCallingMethod().ReflectedType.Assembly;
-
-            this.registerWebJavaScriptObject = registerWebJavaScriptObject;
-            this.unregisterWebJavaScriptObject = unregisterWebJavaScriptObject;
-            this.executeWebScriptFunctionWithSerializedParams = executeWebScriptFunctionWithSerializedParams;
-
-
-            NativeAPI.Initialize(this, registerWebJavaScriptObject);
+            ServerView = new ServerView();
+            NativeAPI.Initialize(this);
             Loader = new LoaderModule(this);
 
             DefaultStyleSheet = defaultStyleSheet;
@@ -306,14 +301,14 @@ namespace ReactViewControl {
         /// Opens the developer tools.
         /// </summary>
         public void ShowDeveloperTools() {
-            WebView.ShowDeveloperTools();
+            //WebView.ShowDeveloperTools();
         }
 
         /// <summary>
         /// Closes the developer tools.
         /// </summary>
         public void CloseDeveloperTools() {
-            WebView.CloseDeveloperTools();
+            //WebView.CloseDeveloperTools();
         }
 
         /// <summary>
@@ -498,18 +493,16 @@ namespace ReactViewControl {
                     var resourceKeyAndOptions = queryString.Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries).Select(p => Uri.UnescapeDataString(p));
                     var resourceKey = resourceKeyAndOptions.FirstOrDefault();
                     var options = resourceKeyAndOptions.Skip(1).ToArray();
-                    Resource response = customResourceRequestedHandlers.Select(h => h(resourceKeyAndOptions.FirstOrDefault(), options)).
-                        FirstOrDefault(r => r?.Content != null && r.Content.CanRead);
+                    Resource response = customResourceRequestedHandlers.Select(h => h(resourceKey, options)).
+                        FirstOrDefault(r => r?.Content != null);
                     if (response != null) {
                         extension = (response.Extension ?? Path.GetExtension(resourceKey)).TrimStart('.');
                         return response.Content;
-                    } else {
-                        extension = "";
-                        return MemoryStream.Null;
                     }
                 }
             }
-            throw new NotImplementedException();
+            extension = "";
+            return MemoryStream.Null;
         }
 
         /// <summary>
@@ -520,7 +513,7 @@ namespace ReactViewControl {
         /// <param name="forceNativeSyncCalls"></param>
         private void RegisterNativeObject(IViewModule module, FrameInfo frame) {
             var nativeObjectName = module.GetNativeObjectFullName(frame.Name);
-            registerWebJavaScriptObject(nativeObjectName, module.CreateNativeObject(), /*interceptCall*/ CallNativeMethod, /*executeCallsInUI*/ false);
+            ServerView.RegisterWebJavaScriptObject(nativeObjectName, module.CreateNativeObject(), /*interceptCall*/ CallNativeMethod, /*executeCallsInUI*/ false);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -538,7 +531,7 @@ namespace ReactViewControl {
         /// <param name="frameName"></param>
         private void UnregisterNativeObject(IViewModule module, FrameInfo frame) {
             var nativeObjectName = module.GetNativeObjectFullName(frame.Name);
-            unregisterWebJavaScriptObject(nativeObjectName);
+            ServerView.UnregisterWebJavaScriptObject(nativeObjectName);
         }
 
         /// <summary>

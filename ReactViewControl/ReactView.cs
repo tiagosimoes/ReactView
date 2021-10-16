@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.CompilerServices;
 using WebViewControl;
 
@@ -18,7 +17,7 @@ namespace ReactViewControl {
 
         private static ReactViewRender CreateReactViewInstance(ReactViewFactory factory) {
             ReactViewRender InnerCreateView() {
-                var view = new ReactViewRender(factory.DefaultStyleSheet, () => factory.InitializePlugins(), factory.EnableViewPreload, factory.MaxNativeMethodsParallelCalls, factory.EnableDebugMode, factory.DevServerURI, factory.RegisterWebJavaScriptObject, factory.UnregisterWebJavaScriptObject, factory.ExecuteWebScriptFunctionWithSerializedParams);
+                var view = new ReactViewRender(factory.DefaultStyleSheet, () => factory.InitializePlugins(), factory.EnableViewPreload, factory.MaxNativeMethodsParallelCalls, factory.EnableDebugMode, factory.DevServerURI);
                 if (factory.ShowDeveloperTools) {
                     view.ShowDeveloperTools();
                 }

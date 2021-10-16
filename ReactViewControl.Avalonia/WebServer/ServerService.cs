@@ -54,8 +54,7 @@ namespace ReactViewControl.WebServer {
                         context.Response.Redirect(StarterURL);
                     } else {
                         if (path == "/favicon.ico") {
-                            // TODO
-                            //path = Common.CommonIcons.OutSystems.ToIcon().URL;
+                            path = "/ServiceStudio.Common/Images/OutSystems.ico";
                         }
                         using (Stream stream = ResourcesManager.TryGetResource(path, true, out string extension)) {
                             context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);

@@ -100,6 +100,12 @@ namespace ReactViewControl.WebServer {
             NextWebSocket = socket;
             if (firstSocket == null) {
                 firstSocket = socket;
+                Task.Run(() => {
+                    while (firstSocket.State != WebSocketState.Closed) {
+                        Task.Delay(100);
+                    }
+                    Environment.Exit(0);
+                });
             }
         }
 

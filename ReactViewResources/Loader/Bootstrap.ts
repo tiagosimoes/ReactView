@@ -21,6 +21,7 @@ async function bootstrap() {
     var websocket = await setWebSocketsConnection();
     if (websocket != null) {
         websocket.onmessage = onWebSocketMessageReceived;
+        websocket.onclose = () => window.close();
     }
     window["websocket"] = websocket;
     await loadFramework(mainView);
@@ -39,6 +40,9 @@ function onWebSocketMessageReceived(event) {
             break;
         case "UnregisterObjectName":
             delete window[objectNameValue];
+            if (objectNameValue == nativeAPIObjectName) {
+                window.close();
+            }
             break;
         case "Execute":
             execute(objectNameValue, object.Arguments)

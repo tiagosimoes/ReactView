@@ -65,6 +65,17 @@ namespace ReactViewControl.WebServer {
             return JsonSerializer.Deserialize<MethodCall>(text, new JsonSerializerOptions { IncludeFields = true });
         }
 
+        public struct EvaluateResult {
+#pragma warning disable CS0649
+            public string EvaluateKey;
+#pragma warning disable CS0649
+            public JsonElement EvaluatedResult;
+        }
+
+        public static EvaluateResult DeserializeEvaluateResult(string text) {
+            return JsonSerializer.Deserialize<EvaluateResult>(text, new JsonSerializerOptions { IncludeFields = true });
+        }
+
         private static object GetJSONValue(JsonElement elem, Type type) {
             switch (elem.ValueKind) {
                 case JsonValueKind.Null:
@@ -99,22 +110,26 @@ namespace ReactViewControl.WebServer {
                 }
             }
             if (method.ReturnType == typeof(void)) {
-                AsyncExecuteInUIThread(() => {
-                    obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray());
-                });
+                AsyncExecuteIfNeeded(() => 
+                    obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray())
+                );
                 return null;
             } else {
                 return obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray());
             }
         }
 
-        private static void AsyncExecuteInUIThread(Action action) {
+        private static void AsyncExecuteIfNeeded(Action action) {
             if (Dispatcher.UIThread.CheckAccess()) {
                 action();
                 return;
-            }
-            Dispatcher.UIThread.InvokeAsync(action);
-        }
+            } else {
+                //Dispatcher.UIThread.InvokeAsync(action);
 
+                System.Threading.Tasks.Task.Run(() =>
+                    action()
+                );
+            }
+        }
     }
 }

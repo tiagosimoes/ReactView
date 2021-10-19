@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using Avalonia.Threading;
 
 namespace ReactViewControl.WebServer {
@@ -77,16 +78,22 @@ namespace ReactViewControl.WebServer {
         }
 
         private void ReceiveMessage(string text) {
-            var methodCall = SerializedObject.DeserializeMethodCall(text);
-            var obj = registeredObjects[methodCall.ObjectName];
-            var callTargetMethod = registeredObjectInterceptMethods[methodCall.ObjectName];
-            callTargetMethod(() => {
-                var result = SerializedObject.ExecuteMethod(obj, methodCall);
-                if (obj.GetType().GetMethod(methodCall.MethodName).ReturnType != typeof(void)) {
-                    ReturnValue(methodCall.CallKey, result);
-                }
-                return result;
-            });
+            if (text.StartsWith("{\"EvaluateKey\"")) {
+                var evaluateResult = SerializedObject.DeserializeEvaluateResult(text);
+                evaluateResults[evaluateResult.EvaluateKey] = evaluateResult.EvaluatedResult;
+
+            } else {
+                var methodCall = SerializedObject.DeserializeMethodCall(text);
+                var obj = registeredObjects[methodCall.ObjectName];
+                var callTargetMethod = registeredObjectInterceptMethods[methodCall.ObjectName];
+                callTargetMethod(() => {
+                    var result = SerializedObject.ExecuteMethod(obj, methodCall);
+                    if (obj.GetType().GetMethod(methodCall.MethodName).ReturnType != typeof(void)) {
+                        ReturnValue(methodCall.CallKey, result);
+                    }
+                    return result;
+                });
+            }
         }
 
         private WebSocket webSocket;
@@ -110,7 +117,7 @@ namespace ReactViewControl.WebServer {
         }
 
         private async System.Threading.Tasks.Task OnWebSocketMessageReceived(WebSocket webSocket) {
-            var buffer = new byte[1024 * 4];
+            var buffer = new byte[1024 * 1024];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             while (!result.CloseStatus.HasValue) {
                 var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
@@ -136,5 +143,23 @@ namespace ReactViewControl.WebServer {
             _ = SendWebSocketMessage(text);
         }
 
+        private readonly Dictionary<string, JsonElement> evaluateResults = new Dictionary<string, JsonElement>();
+
+        internal Task<T> EvaluateScriptFunctionWithSerializedParams<T>(string method, object[] args) {
+            var evaluateKey = Guid.NewGuid().ToString();
+            var text = $"{{ \"EvaluateScriptFunctionWithSerializedParams\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}\", \"Arguments\": {JsonSerializer.Serialize(args)} }}";
+            _ = SendWebSocketMessage(text);
+            while (!evaluateResults.ContainsKey(evaluateKey)) {
+                Task.Delay(50);
+            }
+            return Task.FromResult<T>(JsonSerializer.Deserialize<T>((evaluateResults[evaluateKey]).GetRawText()));
+        }
+
+        internal string GetViewName() {
+            while (nativeAPI.ViewRender.Host == null) {
+                System.Threading.Tasks.Task.Delay(10);
+            }
+            return nativeAPI.ViewRender.Host.GetType().Name;
+        }
     }
 }

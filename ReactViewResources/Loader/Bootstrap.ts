@@ -13,6 +13,7 @@ async function bootstrap() {
     if (!rootElement) {
         throw new Error("Root element not found");
     }
+    rootElement.style.cursor = "wait";
 
     const mainView = newView(0, mainFrameName, true, rootElement);
     mainView.head = document.head;
@@ -41,8 +42,21 @@ function onWebSocketMessageReceived(event) {
         case "UnregisterObjectName":
             delete window[objectNameValue];
             if (objectNameValue == nativeAPIObjectName) {
-                window.close();
+                if (window.frameElement == null) {
+                    //close browser tab
+                    window.close();
+                } else {
+                    // close popup
+                    window.frameElement.parentElement?.removeChild(window.frameElement);
+                }
             }
+            break;
+        case "EvaluateScriptFunctionWithSerializedParams":
+            var result = execute(objectNameValue, object.Arguments);
+            var evaluateKeyName = Object.getOwnPropertyNames(object)[1]
+            var evaluateKey = object[evaluateKeyName];
+            var evaluatedResult = { EvaluateKey: evaluateKey, EvaluatedResult: result };
+            window["websocket"].send(JSON.stringify(evaluatedResult));
             break;
         case "Execute":
             execute(objectNameValue, object.Arguments)
@@ -54,6 +68,7 @@ function onWebSocketMessageReceived(event) {
             window.open(objectNameValue, "_blank")?.focus();
             break;
         case "OpenURLInPopup":
+        case "OpenTooltip":
             OpenURLInPopup(objectNameValue);
             break;
         default:
@@ -67,8 +82,15 @@ function OpenURLInPopup(url) {
     ifrm.style.width = "50vw";
     ifrm.style.height = "50vh";
     ifrm.style.position = "fixed";
-    ifrm.style.top = "25vh";
-    ifrm.style.left = "25vw";
+    ifrm.style.top = "0";
+    ifrm.style.left = "50%";
+    ifrm.style.transform = "translate(-50%, 0)";
+    ifrm.style.zIndex = "2147483647";
+    ifrm.style.resize = "both";
+    ifrm.style.overflow = "auto";
+    ifrm.style.backgroundColor = "transparent";
+    ifrm.frameBorder = "0";
+    //ifrm.setAttribute("allowTransparency", "true");
     document.body.appendChild(ifrm);
     ifrm.focus();
 }
@@ -76,12 +98,12 @@ function OpenURLInPopup(url) {
 function execute(script, args) {
     if (args != null) {
         if (Array.isArray(args)) {
-            eval(script + "(" + args.map(arg => JSON.stringify(arg)).join(",") + ")");
+            return eval(script + "(" + args.map(arg => JSON.stringify(arg)).join(",") + ")");
         } else {
-            eval(script + "(" + JSON.stringify(args) + ")");
+            return eval(script + "(" + JSON.stringify(args) + ")");
         }
     } else {
-        eval(script);
+        return eval(script);
     }
 } 
 

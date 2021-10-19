@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -72,19 +73,36 @@ namespace ReactViewControl.WebServer {
 
         static ServerView lastNativeObject;
 
-        internal static void NewNativeObject(string name, ServerView extendedReactViewFactory) {
-            NativeObjects[name] = extendedReactViewFactory;
-            lastNativeObject = extendedReactViewFactory;
+        internal static void NewNativeObject(string name, ServerView serverView) {
+            NativeObjects[name] = serverView;
+            lastNativeObject = serverView;
             string url = $"/{ReactViewResources}/index.html?./&true&__Modules__&{name}&{CustomResourcePath}";
             if (NativeObjects.Count == 1) {
                 StarterURL = url;
+                Process.Start(new ProcessStartInfo("cmd", $"/c start http://localhost/") { CreateNoWindow = true });
             } else {
-                var text = $"{{ \"OpenURL\": \"{JsonEncodedText.Encode(url)}\", \"Arguments\":[] }}";
-                var stream = Encoding.UTF8.GetBytes(text);
-                Task.Run(() => {
+                _ = Task.Run(() => {
                     while (firstSocket == null) {
                         Task.Delay(100);
                     }
+                    var text = $"{{ \"";//  OpenURL\": \"{JsonEncodedText.Encode(url)}\", \"Arguments\":[] }}";
+                    switch (serverView.GetViewName()) {
+                        case "ReactViewHostForPlugins":
+                        case "DialogView":
+                            text += "OpenURLInPopup";
+                            break;
+                        case "TooltipView":
+                            //text += "OpenTooltip";
+                            //break;
+                            return;
+                        case "WorkspaceView":
+                            text += "OpenURL";
+                            break;
+                        default:
+                            throw new NotImplementedException();
+                    }
+                    text += $"\": \"{JsonEncodedText.Encode(url)}\", \"Arguments\":[] }}";
+                    var stream = Encoding.UTF8.GetBytes(text);
                     if (firstSocket.State == WebSocketState.Open) {
                         _ = firstSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
                     }
@@ -129,7 +147,7 @@ namespace ReactViewControl.WebServer {
         private IWebHost server = null;
         public void RestartServer() {
             StopServer();
-            server = WebHost.CreateDefaultBuilder().UseUrls("http://*:80", "https://*:443").UseKestrel()
+            server = WebHost.CreateDefaultBuilder().UseUrls("http://*:80", "http://*:8080", "https://*:443").UseKestrel()
                 .UseStartup<ServerApiStartup>().UseDefaultServiceProvider((b, o) => {
             }).Build();
 

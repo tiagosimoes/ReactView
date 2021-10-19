@@ -38,9 +38,7 @@ namespace ReactViewControl {
             }
             module.Host?.HandledBeforeExecuteMethod();
             var method = FormatMethodInvocation(module, methodCall);
-            //TODO TCS Review this
-            throw new NotImplementedException();
-            //return webView.EvaluateScriptFunctionWithSerializedParams<T>(method, args);
+            return serverView.EvaluateScriptFunctionWithSerializedParams<T>(method, args);
         }
 
         public void Start(ServerView serverView, string frameName, string id) {

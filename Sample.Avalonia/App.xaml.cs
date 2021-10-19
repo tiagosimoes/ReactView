@@ -16,7 +16,6 @@ namespace Sample.Avalonia {
         public override void OnFrameworkInitializationCompleted() {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
                 desktop.MainWindow = new MainWindow();
-                Process.Start(new ProcessStartInfo("cmd", $"/c start http://localhost/") { CreateNoWindow = true });
             }
             base.OnFrameworkInitializationCompleted();
         }

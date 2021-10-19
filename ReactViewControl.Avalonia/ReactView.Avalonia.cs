@@ -9,6 +9,7 @@ namespace ReactViewControl {
 
         partial void ExtraInitialize() {
             AttachedToVisualTree += OnAttachedToVisualTree;
+            DetachedFromLogicalTree += OnDetachedFromLogicalTree;
             VisualChildren.Add(View);
         }
 
@@ -24,6 +25,9 @@ namespace ReactViewControl {
 
         internal static void AsyncExecuteInUI(Action action, bool lowPriority) {
             Dispatcher.UIThread.Post(action, lowPriority ? DispatcherPriority.Background : DispatcherPriority.Normal);
+        }
+        private void OnDetachedFromLogicalTree(object sender, Avalonia.LogicalTree.LogicalTreeAttachmentEventArgs e) {
+            InternalDispose();
         }
 
         protected override void InternalDispose() => Dispose();

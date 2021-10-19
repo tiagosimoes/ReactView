@@ -17,30 +17,11 @@ namespace ReactViewControl {
 
         private static ReactViewRender CreateReactViewInstance(ReactViewFactory factory) {
             ReactViewRender InnerCreateView() {
-                var view = new ReactViewRender(factory.DefaultStyleSheet, () => factory.InitializePlugins(), factory.EnableViewPreload, factory.MaxNativeMethodsParallelCalls, factory.EnableDebugMode, factory.DevServerURI);
+                var view = new ReactViewRender(factory.DefaultStyleSheet, () => factory.InitializePlugins(), factory.MaxNativeMethodsParallelCalls, factory.EnableDebugMode, factory.DevServerURI);
                 if (factory.ShowDeveloperTools) {
                     view.ShowDeveloperTools();
                 }
                 return view;
-            }
-
-            if (factory.EnableViewPreload) {
-                var factoryType = factory.GetType();
-                // check if we have a view cached for the current factory
-                if (CachedViews.TryGetValue(factoryType, out var cachedView)) {
-                    CachedViews.Remove(factoryType);
-                }
-
-                // create a new view in the background and put it in the cache
-                AsyncExecuteInUI(() => {
-                    if (!CachedViews.ContainsKey(factoryType)) {
-                        CachedViews.Add(factoryType, InnerCreateView());
-                    }
-                }, lowPriority: true);
-
-                if (cachedView != null) {
-                    return cachedView;
-                }
             }
 
             return InnerCreateView();

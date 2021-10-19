@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ReactViewControl {
@@ -10,17 +11,19 @@ namespace ReactViewControl {
         /// </summary>
         public class NativeAPI {
 
-            private const string NativeObjectName = "__NativeAPI__";
+            private string nativeObjectName = "__NativeAPI__";
 
             public ReactViewRender ViewRender { get; }
 
             private NativeAPI(ReactViewRender viewRender) {
                 ViewRender = viewRender;
-                viewRender.ServerView.RegisterWebJavaScriptObject(NativeObjectName + GetHashCode(), this, null, false);
+                nativeObjectName += GetHashCode();
+                viewRender.ServerView.RegisterWebJavaScriptObject(nativeObjectName, this, null, false);
             }
 
-            public static void Initialize(ReactViewRender viewRender) {
-                new NativeAPI(viewRender);
+            public static string Initialize(ReactViewRender viewRender) {
+                var newNativeAPI = new NativeAPI(viewRender);
+                return newNativeAPI.nativeObjectName;
             }
 
             /// <summary>

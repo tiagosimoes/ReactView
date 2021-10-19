@@ -38,11 +38,13 @@ namespace ReactViewControl {
         private ResourceUrl defaultStyleSheet;
         private bool isInputDisabled; // used primarly to control the intention to disable input (before the browser is ready)
 
+        private string mainFramNativeObjectName;
 
-        public ReactViewRender(ResourceUrl defaultStyleSheet, Func<IViewModule[]> initializePlugins, bool preloadWebView, int maxNativeMethodsParallelCalls, bool enableDebugMode, Uri devServerUri = null) {
+
+        public ReactViewRender(ResourceUrl defaultStyleSheet, Func<IViewModule[]> initializePlugins, int maxNativeMethodsParallelCalls, bool enableDebugMode, Uri devServerUri = null) {
             UserCallingAssembly = GetUserCallingMethod().ReflectedType.Assembly;
             ServerView = new ServerView();
-            NativeAPI.Initialize(this);
+            mainFramNativeObjectName = NativeAPI.Initialize(this);
             Loader = new LoaderModule(this);
 
             DefaultStyleSheet = defaultStyleSheet;
@@ -186,6 +188,7 @@ namespace ReactViewControl {
         }
 
         public void Dispose() {
+            ServerView.UnregisterWebJavaScriptObject(mainFramNativeObjectName);
         }
 
         /// <summary>

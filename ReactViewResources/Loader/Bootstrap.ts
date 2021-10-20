@@ -103,7 +103,7 @@ function OpenURLInPopup(url) {
     ifrm.style.boxShadow = "2px 2px 6px #aaa";
     ifrm.style.opacity = "0";
     ifrm.style.transitionProperty = "opacity";
-    ifrm.style.transitionDuration = ".5s";
+    ifrm.style.transitionDuration = ".2s";
     //ifrm.style.backgroundColor = "transparent";
     //ifrm.setAttribute("allowTransparency", "true");
     document.body.appendChild(ifrm);

@@ -165,7 +165,10 @@ namespace ReactViewControl.WebServer {
         }
 
         internal async void SetPopupDimensionsIfNeeded() {
-            if (GetViewName() == "ReactViewHostForPlugins") {
+            if (GetViewName() == "ReactViewHostForPlugins" || GetViewName() == "DialogView") {
+                while (!nativeAPI.ViewRender.IsInitialized) {
+                    await Task.Delay(10);
+                }
                 var dimensions = nativeAPI.ViewRender.Bounds;
                 if (dimensions.Width != 0) {
                     var text = $"{{ \"ResizePopup\": \"ResizePopup\", \"Arguments\": {JsonSerializer.Serialize(dimensions)} }}";

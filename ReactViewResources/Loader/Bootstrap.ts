@@ -59,6 +59,12 @@ function onWebSocketMessageReceived(event) {
             break;
         case "Execute":
             execute(objectNameValue, object.Arguments)
+            if (objectNameValue == "__Modules__(\"\",\"0\",\"Dialog.view\").setInnerView") {
+                ResizePopup((document.body.firstElementChild as HTMLElement)?.offsetWidth, document.body.scrollHeight);
+            }
+            break;
+        case "ResizePopup":
+            ResizePopup(object.Arguments["Width"], object.Arguments["Height"]);
             break;
         case "ReturnValue":
             returnValues[objectNameValue] = object.Arguments;
@@ -75,11 +81,17 @@ function onWebSocketMessageReceived(event) {
     }
 }
 
+function ResizePopup(width: number, height:number) {
+    var frameElem = window.frameElement as HTMLElement;
+    frameElem.style.height = height + "px";
+    frameElem.style.width = width + "px";
+    frameElem.style.opacity = "1";
+}
+
+
 function OpenURLInPopup(url) {
     var ifrm = document.createElement("iframe");
     ifrm.setAttribute("src", url);
-    ifrm.style.width = "50vw";
-    ifrm.style.height = "50vh";
     ifrm.style.position = "fixed";
     ifrm.style.top = "30px";
     ifrm.style.left = "50%";
@@ -89,6 +101,9 @@ function OpenURLInPopup(url) {
     ifrm.style.overflow = "auto";
     ifrm.frameBorder = "0";
     ifrm.style.boxShadow = "2px 2px 6px #aaa";
+    ifrm.style.opacity = "0";
+    ifrm.style.transitionProperty = "opacity";
+    ifrm.style.transitionDuration = ".5s";
     //ifrm.style.backgroundColor = "transparent";
     //ifrm.setAttribute("allowTransparency", "true");
     document.body.appendChild(ifrm);

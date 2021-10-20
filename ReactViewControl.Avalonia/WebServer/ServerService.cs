@@ -127,8 +127,10 @@ namespace ReactViewControl.WebServer {
 
 
         internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs, string path) {
-            connections.Find(conn => conn.NativeObjectName == path.Substring(1)).socket = socket;
+            var connection = connections.Find(conn => conn.NativeObjectName == path.Substring(1));
+            connections.Find(conn => conn == connection).socket = socket;
             NextWebSocket = socket;
+            connection.serverView.SetPopupDimensionsIfNeeded();
         }
 
 

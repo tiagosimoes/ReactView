@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Threading;
 
 namespace ReactViewControl.WebServer {
@@ -107,7 +108,7 @@ namespace ReactViewControl.WebServer {
 
         private async Task<WebSocket> WaitForNextWebSocket() {
             while (webSocket == null) {
-                await Task.Delay(500);
+                await Task.Delay(10);
                 webSocket = ServerApiStartup.NextWebSocket;
             }
             ServerApiStartup.NextWebSocket = null;
@@ -161,6 +162,19 @@ namespace ReactViewControl.WebServer {
                 Task.Delay(10);
             }
             return nativeAPI.ViewRender.Host.GetType().Name;
+        }
+
+        internal async void SetPopupDimensionsIfNeeded() {
+            if (GetViewName() == "ReactViewHostForPlugins") {
+                var dimensions = nativeAPI.ViewRender.Bounds;
+                if (dimensions.Width != 0) {
+                    var text = $"{{ \"ResizePopup\": \"ResizePopup\", \"Arguments\": {JsonSerializer.Serialize(dimensions)} }}";
+                    while (webSocket == null) {
+                        await Task.Delay(10);
+                    }
+                    _ = SendWebSocketMessage(text);
+                }
+            }
         }
     }
 }

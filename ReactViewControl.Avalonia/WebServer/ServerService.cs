@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -31,7 +32,7 @@ namespace ReactViewControl.WebServer {
                 if (context.WebSockets.IsWebSocketRequest) {
                     using (WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync()) {
                         var socketFinishedTcs = new TaskCompletionSource<object>();
-                        AddSocket(webSocket, socketFinishedTcs);
+                        AddSocket(webSocket, socketFinishedTcs, context.Request.Path);
                         await socketFinishedTcs.Task;
                     }
                 } else {
@@ -44,7 +45,7 @@ namespace ReactViewControl.WebServer {
                         var customPath = path.Value.Substring(path.Value.IndexOf(prefix)).Replace(prefix, "") + context.Request.QueryString;
                         string referer = context.Request.Headers["Referer"];
                         var nativeobjectname = Regex.Match(referer ?? "", "__NativeAPI__\\d*").Value;
-                        var nativeObject = nativeobjectname != "" ? NativeObjects[nativeobjectname] : lastNativeObject;
+                        var nativeObject = nativeobjectname != "" ? connections.FirstOrDefault(conn => conn.NativeObjectName == nativeobjectname).serverView : connections.Last().serverView;
                         Stream stream = nativeObject.GetCustomResource(customPath, out string extension);
                         context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
                         await stream.CopyToAsync(context.Response.Body);
@@ -66,67 +67,77 @@ namespace ReactViewControl.WebServer {
             });
         }
 
-        readonly static Dictionary<string, ServerView> NativeObjects = new Dictionary<string, ServerView>();
 
 
         static string StarterURL;
 
-        static ServerView lastNativeObject;
-
         internal static void NewNativeObject(string name, ServerView serverView) {
-            NativeObjects[name] = serverView;
-            lastNativeObject = serverView;
+            connections.Add(new Connection(name, serverView));
             string url = $"/{ReactViewResources}/index.html?./&true&__Modules__&{name}&{CustomResourcePath}";
-            if (NativeObjects.Count == 1) {
+            if (connections.Count == 1) {
                 StarterURL = url;
                 Process.Start(new ProcessStartInfo("cmd", $"/c start http://localhost/") { CreateNoWindow = true });
             } else {
                 _ = Task.Run(() => {
-                    while (firstSocket == null) {
+                    while (LastWebSocketWithActivity == null) {
                         Task.Delay(100);
                     }
-                    var text = $"{{ \"";//  OpenURL\": \"{JsonEncodedText.Encode(url)}\", \"Arguments\":[] }}";
+                    var text = $"{{ \"";
                     switch (serverView.GetViewName()) {
                         case "ReactViewHostForPlugins":
                         case "DialogView":
                             text += "OpenURLInPopup";
                             break;
                         case "TooltipView":
+                            // TODO TCS, fix tooltips 
                             //text += "OpenTooltip";
                             //break;
                             return;
                         case "WorkspaceView":
+                        default:
                             text += "OpenURL";
                             break;
-                        default:
-                            throw new NotImplementedException();
                     }
                     text += $"\": \"{JsonEncodedText.Encode(url)}\", \"Arguments\":[] }}";
                     var stream = Encoding.UTF8.GetBytes(text);
-                    if (firstSocket.State == WebSocketState.Open) {
-                        _ = firstSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
+                    if (LastWebSocketWithActivity.State == WebSocketState.Open) {
+                        _ = LastWebSocketWithActivity.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
                     }
                 });
             }
         }
+
+        class Connection {
+            public string NativeObjectName;
+            public ServerView serverView;
+            public WebSocket socket;
+            public bool isWorkspace;
+            public Connection(string nativeObjectName, ServerView serverView) {
+                this.NativeObjectName = nativeObjectName;
+                this.serverView = serverView;
+                this.socket = null;
+                this.isWorkspace = false;
+            }
+        }
+
+        static List<Connection> connections = new List<Connection>();
 
         public static WebSocket NextWebSocket;
+        public static WebSocket LastWebSocketWithActivity;
 
-        static WebSocket firstSocket = null;
 
-        internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs) {
+        internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs, string path) {
+            connections.Find(conn => conn.NativeObjectName == path.Substring(1)).socket = socket;
             NextWebSocket = socket;
-            if (firstSocket == null) {
-                firstSocket = socket;
-                Task.Run(() => {
-                    while (firstSocket.State != WebSocketState.Closed) {
-                        Task.Delay(100);
-                    }
-                    Environment.Exit(0);
-                });
-            }
         }
 
+
+        internal static void CloseSocket(WebSocket webSocket) {
+            connections.Remove(connections.Find(con => con.socket == webSocket));
+            if (connections.Count == 0) {
+                Environment.Exit(0);
+            }
+        }
     }
 
     internal class ServerService {

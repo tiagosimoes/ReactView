@@ -13,7 +13,6 @@ async function bootstrap() {
     if (!rootElement) {
         throw new Error("Root element not found");
     }
-    rootElement.style.cursor = "wait";
 
     const mainView = newView(0, mainFrameName, true, rootElement);
     mainView.head = document.head;
@@ -82,14 +81,15 @@ function OpenURLInPopup(url) {
     ifrm.style.width = "50vw";
     ifrm.style.height = "50vh";
     ifrm.style.position = "fixed";
-    ifrm.style.top = "0";
+    ifrm.style.top = "30px";
     ifrm.style.left = "50%";
     ifrm.style.transform = "translate(-50%, 0)";
     ifrm.style.zIndex = "2147483647";
     ifrm.style.resize = "both";
     ifrm.style.overflow = "auto";
-    ifrm.style.backgroundColor = "transparent";
     ifrm.frameBorder = "0";
+    ifrm.style.boxShadow = "2px 2px 6px #aaa";
+    //ifrm.style.backgroundColor = "transparent";
     //ifrm.setAttribute("allowTransparency", "true");
     document.body.appendChild(ifrm);
     ifrm.focus();

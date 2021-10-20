@@ -27,7 +27,6 @@ namespace ReactViewControl.WebServer {
                 return false;
             }
 
-            // TODO TCS: Check if this is needded
             if (executeCallsInUI) {
                 return RegisterWebJavaScriptObject(name, objectToBind, target => ExecuteInUI<object>(target), false);
             }
@@ -98,7 +97,7 @@ namespace ReactViewControl.WebServer {
 
         private WebSocket webSocket;
 
-        private async System.Threading.Tasks.Task SendWebSocketMessage(string message) {
+        private async Task SendWebSocketMessage(string message) {
             var stream = Encoding.UTF8.GetBytes(message);
             while (webSocket == null) {
                 webSocket = await WaitForNextWebSocket();
@@ -106,25 +105,27 @@ namespace ReactViewControl.WebServer {
             await webSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        private async System.Threading.Tasks.Task<WebSocket> WaitForNextWebSocket() {
+        private async Task<WebSocket> WaitForNextWebSocket() {
             while (webSocket == null) {
-                await System.Threading.Tasks.Task.Delay(500);
-                webSocket = WebServer.ServerApiStartup.NextWebSocket;
+                await Task.Delay(500);
+                webSocket = ServerApiStartup.NextWebSocket;
             }
-            WebServer.ServerApiStartup.NextWebSocket = null;
-            _ = OnWebSocketMessageReceived(webSocket);
+            ServerApiStartup.NextWebSocket = null;
+            _ = ListenForMessages(webSocket);
             return webSocket;
         }
 
-        private async System.Threading.Tasks.Task OnWebSocketMessageReceived(WebSocket webSocket) {
+        private async Task ListenForMessages(WebSocket webSocket) {
             var buffer = new byte[1024 * 1024];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             while (!result.CloseStatus.HasValue) {
                 var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
                 ReceiveMessage(text);
+                ServerApiStartup.LastWebSocketWithActivity = webSocket;
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+            ServerApiStartup.CloseSocket(webSocket);
         }
 
         public void UnregisterWebJavaScriptObject(string name) {
@@ -157,7 +158,7 @@ namespace ReactViewControl.WebServer {
 
         internal string GetViewName() {
             while (nativeAPI.ViewRender.Host == null) {
-                System.Threading.Tasks.Task.Delay(10);
+                Task.Delay(10);
             }
             return nativeAPI.ViewRender.Host.GetType().Name;
         }

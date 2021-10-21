@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.ResponseCaching;
 
 namespace ReactViewControl.WebServer {
     class ServerApiStartup {
@@ -21,12 +22,27 @@ namespace ReactViewControl.WebServer {
         readonly static string CustomResourcePath = "custom/resource";
 
         public void ConfigureServices(IServiceCollection services) {
-            //services.AddResponseCompression();
+            services.AddResponseCompression();
+            services.AddResponseCaching();
         }
         public void Configure(IApplicationBuilder app) {
             //app.UseSession();
             //app.UseHttpsRedirection();
-            //app.UseResponseCompression();
+            app.UseResponseCaching();
+            app.UseResponseCompression();
+            app.Use(async (context, next) =>
+            {
+                if(context.Request.Host.Value != "localhost"){
+                    context.Response.GetTypedHeaders().CacheControl =
+                        new Microsoft.Net.Http.Headers.CacheControlHeaderValue() {
+                            Public = true,
+                            MaxAge = TimeSpan.FromSeconds(120)
+                        };
+                    context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Vary] =
+                        new string[] { "Accept-Encoding" };
+                }
+                await next();
+            });
             app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromMinutes(15) });  // TODO TCS Review this timeout
             _ = app.Use(async (context, next) => {
                 if (context.WebSockets.IsWebSocketRequest) {
@@ -36,6 +52,12 @@ namespace ReactViewControl.WebServer {
                         await socketFinishedTcs.Task;
                     }
                 } else {
+                    if (context.Request.Host.Value != "localhost") {
+                        var responseCachingFeature = context.Features.Get<IResponseCachingFeature>();
+                        if (responseCachingFeature != null) {
+                            responseCachingFeature.VaryByQueryKeys = new[] { "*" };
+                        }
+                    }
                     // static resources
                     PathString path = context.Request.Path;
                     string prefix = $"/custom/resource";
@@ -160,8 +182,14 @@ namespace ReactViewControl.WebServer {
         private IWebHost server = null;
         public void RestartServer() {
             StopServer();
-            server = WebHost.CreateDefaultBuilder().UseUrls("http://*:80", "http://*:8080", "https://*:443").UseKestrel()
-                .UseStartup<ServerApiStartup>().UseDefaultServiceProvider((b, o) => {
+            server = WebHost.CreateDefaultBuilder().UseUrls("http://*:80", "https://*:443", "http://*:8080").UseKestrel()
+                .ConfigureKestrel(serverOptions => {
+                serverOptions.ConfigureHttpsDefaults(listenOptions => {
+                    if (File.Exists("outsystemsstudio.pfx")) { 
+                        listenOptions.ServerCertificate = new System.Security.Cryptography.X509Certificates.X509Certificate2("outsystemsstudio.pfx");
+                    }
+                });
+            }).UseStartup<ServerApiStartup>().UseDefaultServiceProvider((b, o) => {
             }).Build();
 
             // Starting;

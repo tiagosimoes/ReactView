@@ -16,6 +16,7 @@ export function disableMouseInteractions() {
         layer.style.top = "0";
         layer.style.left = "0";
         layer.style.zIndex = "2147483646";
+        //TODO TCS ugly workaround while showing progress dialog is not working
         layer.style.cursor = "wait";
         layer.tabIndex = -1;
     }

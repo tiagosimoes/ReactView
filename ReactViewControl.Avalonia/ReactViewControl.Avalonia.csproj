@@ -16,6 +16,11 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
 
+  <!--<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>C:\GIT\PlatformMaster\ServiceStudio\Build\Debug_Hybrid\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>-->
+
   <ItemGroup>
     <Compile Include="..\ReactViewControl\EditCommands.cs" Link="EditCommands.cs" />
     <Compile Include="..\ReactViewControl\ExecutionEngine.cs" Link="ExecutionEngine.cs" />
@@ -38,6 +43,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.ResponseCaching" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.WebSockets" Version="2.2.1" />
     <PackageReference Include="System.Text.Json" Version="5.0.2" />

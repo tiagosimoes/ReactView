@@ -184,12 +184,13 @@ namespace ReactViewControl.WebServer {
             StopServer();
             server = WebHost.CreateDefaultBuilder().UseUrls("http://*:80", "https://*:443", "http://*:8080").UseKestrel()
                 .ConfigureKestrel(serverOptions => {
-                serverOptions.ConfigureHttpsDefaults(listenOptions => {
-                    if (File.Exists("outsystemsstudio.pfx")) { 
-                        listenOptions.ServerCertificate = new System.Security.Cryptography.X509Certificates.X509Certificate2("outsystemsstudio.pfx");
+                    if (File.Exists("outsystemsstudio.pfx")) {
+                        serverOptions.ConfigureHttpsDefaults(listenOptions => {
+                            listenOptions.ServerCertificate = new System.Security.Cryptography.X509Certificates.X509Certificate2("outsystemsstudio.pfx");
+                        });
                     }
-                });
-            }).UseStartup<ServerApiStartup>().UseDefaultServiceProvider((b, o) => {
+                })
+            .UseStartup<ServerApiStartup>().UseDefaultServiceProvider((b, o) => {
             }).Build();
 
             // Starting;

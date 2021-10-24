@@ -30,19 +30,7 @@ namespace ReactViewControl.WebServer {
             //app.UseHttpsRedirection();
             app.UseResponseCaching();
             app.UseResponseCompression();
-            app.Use(async (context, next) =>
-            {
-                if(context.Request.Host.Value != "localhost"){
-                    context.Response.GetTypedHeaders().CacheControl =
-                        new Microsoft.Net.Http.Headers.CacheControlHeaderValue() {
-                            Public = true,
-                            MaxAge = TimeSpan.FromSeconds(120)
-                        };
-                    context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Vary] =
-                        new string[] { "Accept-Encoding" };
-                }
-                await next();
-            });
+            ConfigureCaching(app);
             app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = TimeSpan.FromMinutes(15) });  // TODO TCS Review this timeout
             _ = app.Use(async (context, next) => {
                 if (context.WebSockets.IsWebSocketRequest) {
@@ -52,26 +40,13 @@ namespace ReactViewControl.WebServer {
                         await socketFinishedTcs.Task;
                     }
                 } else {
-                    if (context.Request.Host.Value != "localhost") {
-                        var responseCachingFeature = context.Features.Get<IResponseCachingFeature>();
-                        if (responseCachingFeature != null) {
-                            responseCachingFeature.VaryByQueryKeys = new[] { "*" };
-                        }
-                    }
+                    ConfigureCachingHeaders(context);
                     // static resources
                     PathString path = context.Request.Path;
                     string prefix = $"/custom/resource";
-                    if (path != "/favicon.ico") {
-                    }
                     if (path.Value.Contains(prefix)) {
                         var customPath = path.Value.Substring(path.Value.IndexOf(prefix)).Replace(prefix, "") + context.Request.QueryString;
-                        string referer = context.Request.Headers["Referer"];
-                        var nativeobjectname = Regex.Match(referer ?? "", "__NativeAPI__\\d*").Value;
-                        var nativeObject = nativeobjectname != "" ? connections.FirstOrDefault(conn => conn.NativeObjectName == nativeobjectname).serverView : connections.Last().serverView;
-                        Stream stream = nativeObject.GetCustomResource(customPath, out string extension);
-                        context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
-                        await stream.CopyToAsync(context.Response.Body);
-
+                        await GetCustomResource(context, customPath);
                     } else if (path.Value == "/") {
                         while (StarterURL == null) {
                         }
@@ -89,23 +64,55 @@ namespace ReactViewControl.WebServer {
             });
         }
 
+        private static async Task GetCustomResource(HttpContext context, string customPath) {
+            string referer = context.Request.Headers["Referer"];
+            var nativeobjectname = Regex.Match(referer ?? "", "__NativeAPI__\\d*").Value;
+            var nativeObject = nativeobjectname != "" ? ServerViews.FirstOrDefault(conn => conn.NativeAPIName == nativeobjectname) : ServerViews.Last();
+            Stream stream = nativeObject.GetCustomResource(customPath, out string extension);
+            context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
+            await stream.CopyToAsync(context.Response.Body);
+        }
 
+        private static void ConfigureCachingHeaders(HttpContext context) {
+            if (context.Request.Host.Value != "localhost") {
+                var responseCachingFeature = context.Features.Get<IResponseCachingFeature>();
+                if (responseCachingFeature != null) {
+                    responseCachingFeature.VaryByQueryKeys = new[] { "*" };
+                }
+            }
+        }
+
+        private static void ConfigureCaching(IApplicationBuilder app) {
+            app.Use(async (context, next) => {
+                if (context.Request.Host.Value != "localhost") {
+                    context.Response.GetTypedHeaders().CacheControl =
+                        new Microsoft.Net.Http.Headers.CacheControlHeaderValue() {
+                            Public = true,
+                            MaxAge = TimeSpan.FromSeconds(120)
+                        };
+                    context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Vary] =
+                        new string[] { "Accept-Encoding" };
+                }
+                await next();
+            });
+        }
 
         static string StarterURL;
 
-        internal static void NewNativeObject(string name, ServerView serverView) {
-            connections.Add(new Connection(name, serverView));
-            string url = $"/{ReactViewResources}/index.html?./&true&__Modules__&{name}&{CustomResourcePath}";
-            if (connections.Count == 1) {
+        internal static void NewNativeObject(ServerView serverView) {
+            ServerViews.Add(serverView);
+            string url = $"/{ReactViewResources}/index.html?./&true&__Modules__&{serverView.NativeAPIName}&{CustomResourcePath}";
+            if (ServerViews.Count == 1) {
                 StarterURL = url;
                 Process.Start(new ProcessStartInfo("cmd", $"/c start http://localhost/") { CreateNoWindow = true });
             } else {
                 _ = Task.Run(() => {
-                    while (LastWebSocketWithActivity == null) {
-                        Task.Delay(100);
+                    while (lastServerViewWithActivity == null) {
+                        Task.Delay(1);
                     }
                     var text = $"{{ \"";
                     switch (serverView.GetViewName()) {
+                        case "AIContextSuggestionsMenuView":
                         case "ReactViewHostForPlugins":
                         case "DialogView":
                             text += "OpenURLInPopup";
@@ -121,44 +128,26 @@ namespace ReactViewControl.WebServer {
                             break;
                     }
                     text += $"\": \"{JsonEncodedText.Encode(url)}\", \"Arguments\":[] }}";
-                    var stream = Encoding.UTF8.GetBytes(text);
-                    if (LastWebSocketWithActivity.State == WebSocketState.Open) {
-                        _ = LastWebSocketWithActivity.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
-                    }
+                    _ = lastServerViewWithActivity.SendWebSocketMessage(text);
                 });
             }
         }
 
-        class Connection {
-            public string NativeObjectName;
-            public ServerView serverView;
-            public WebSocket socket;
-            public bool isWorkspace;
-            public Connection(string nativeObjectName, ServerView serverView) {
-                this.NativeObjectName = nativeObjectName;
-                this.serverView = serverView;
-                this.socket = null;
-                this.isWorkspace = false;
-            }
+        internal static void SetLastConnectionWithActivity(ServerView serverView) {
+            lastServerViewWithActivity = serverView;
         }
 
-        static List<Connection> connections = new List<Connection>();
-
-        public static WebSocket NextWebSocket;
-        public static WebSocket LastWebSocketWithActivity;
-
+        static readonly List<ServerView> ServerViews = new List<ServerView>();
+        private static ServerView lastServerViewWithActivity;
 
         internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs, string path) {
-            var connection = connections.Find(conn => conn.NativeObjectName == path.Substring(1));
-            connections.Find(conn => conn == connection).socket = socket;
-            NextWebSocket = socket;
-            connection.serverView.SetPopupDimensionsIfNeeded();
+            var connection = ServerViews.Find(conn => conn.NativeAPIName == path.Substring(1));
+            connection.SetSocket(socket);
         }
 
-
-        internal static void CloseSocket(WebSocket webSocket) {
-            connections.Remove(connections.Find(con => con.socket == webSocket));
-            if (connections.Count == 0) {
+        internal static void CloseSocket(ServerView serverView) {
+            ServerViews.Remove(serverView);
+            if (ServerViews.Count == 0) {
                 Environment.Exit(0);
             }
         }

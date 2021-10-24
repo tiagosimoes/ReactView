@@ -85,7 +85,7 @@ function ResizePopup(width: number, height:number) {
     var frameElem = window.frameElement as HTMLElement;
     frameElem.style.height = height + "px";
     frameElem.style.width = width + "px";
-    frameElem.style.opacity = "1";
+    setTimeout(() => frameElem.style.opacity = "1", 200);
 }
 
 
@@ -95,6 +95,7 @@ function OpenURLInPopup(url) {
     ifrm.style.position = "fixed";
     ifrm.style.top = "30px";
     ifrm.style.left = "50%";
+    ifrm.style.width = "1000px";
     ifrm.style.transform = "translate(-50%, 0)";
     ifrm.style.zIndex = "2147483647";
     ifrm.style.resize = "both";
@@ -104,8 +105,6 @@ function OpenURLInPopup(url) {
     ifrm.style.opacity = "0";
     ifrm.style.transitionProperty = "opacity";
     ifrm.style.transitionDuration = ".2s";
-    //ifrm.style.backgroundColor = "transparent";
-    //ifrm.setAttribute("allowTransparency", "true");
     document.body.appendChild(ifrm);
     ifrm.focus();
 }

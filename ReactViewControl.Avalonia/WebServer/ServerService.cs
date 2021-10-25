@@ -141,8 +141,8 @@ namespace ReactViewControl.WebServer {
         private static ServerView lastServerViewWithActivity;
 
         internal static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs, string path) {
-            var connection = ServerViews.Find(conn => conn.NativeAPIName == path.Substring(1));
-            connection.SetSocket(socket);
+            var serverView = ServerViews.Find(conn => conn.NativeAPIName == path.Substring(1));
+            serverView.SetSocket(socket);
         }
 
         internal static void CloseSocket(ServerView serverView) {

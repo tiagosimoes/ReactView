@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace ReactViewControl.WebServer {
+namespace ReactViewWebServer {
 
     static class ResourceUrls {
 

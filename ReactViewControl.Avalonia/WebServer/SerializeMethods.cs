@@ -6,7 +6,7 @@ using System.Text.Json;
 using Avalonia.Threading;
 
 namespace ReactViewControl.WebServer {
-    class TypeDTO {
+    public class TypeDTO {
         public string AssemblyName;
         public string ClassName;
 
@@ -18,7 +18,7 @@ namespace ReactViewControl.WebServer {
         }
     }
 
-    class MethodSignatureDTO {
+    public class MethodSignatureDTO {
         public TypeDTO ReturnType;
         public string MethodName;
         public TypeDTO[] ParameterTypes;

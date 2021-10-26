@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -12,14 +14,11 @@ using Avalonia.Threading;
 namespace ReactViewControl.WebServer {
     class ServerView {
 
-        static ServerView() {
-            ServerService.StartServer();
-        }
-
         delegate object CallTargetMethod(Func<object> target);
 
         private ReactViewRender.NativeAPI nativeAPI;
         public string NativeAPIName;
+        public DateTime LastActivity;
         readonly Dictionary<string, object> registeredObjects = new Dictionary<string, object>();
         readonly Dictionary<string, CallTargetMethod> registeredObjectInterceptMethods = new Dictionary<string, CallTargetMethod>();
         private CountdownEvent JavascriptPendingCalls { get; } = new CountdownEvent(1);
@@ -61,7 +60,7 @@ namespace ReactViewControl.WebServer {
             if (registeredObjects.Count == 1) {
                 nativeAPI = (ReactViewRender.NativeAPI)objectToBind;
                 NativeAPIName = name;
-                ServerApiStartup.NewNativeObject(this);
+                ServerAPI.NewNativeObject(this);
             }
             var text = $"{{ \"RegisterObjectName\": \"{name}\", \"Object\": {serializedObject} }}";
             _ = SendWebSocketMessage(text);
@@ -74,6 +73,10 @@ namespace ReactViewControl.WebServer {
                 _ = SendWebSocketMessage(text);
                 registeredObjects.Remove(name);
             }
+        }
+
+        internal bool IsOpen() {
+            return webSocket != null && webSocket.State == WebSocketState.Open;
         }
 
         public void ExecuteWebScriptFunctionWithSerializedParams(string functionName, params object[] args) {
@@ -143,12 +146,12 @@ namespace ReactViewControl.WebServer {
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             while (!result.CloseStatus.HasValue) {
                 var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                ServerApiStartup.SetLastConnectionWithActivity(this);
+                LastActivity = DateTime.Now;
                 ReceiveMessage(text);
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            ServerApiStartup.CloseSocket(this);
+            ServerAPI.CloseSocket(this);
         }
 
         internal string GetViewName() {
@@ -181,4 +184,4 @@ namespace ReactViewControl.WebServer {
             SetPopupDimensionsIfNeeded();
         }
     }
-}
+ }

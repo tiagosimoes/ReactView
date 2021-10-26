@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace ReactViewControl.WebServer {
+namespace ReactViewWebServer {
     class AssemblyCache {
 
         private object SyncRoot { get; } = new object();

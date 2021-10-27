@@ -9,7 +9,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
       <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-      <OutputPath>..\..\ServiceStudio\Build\$(Configuration)</OutputPath>
+      <OutputPath>..\..\PlatformMaster\ServiceStudio\Build\Debug_Hybrid</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>

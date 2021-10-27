@@ -90,7 +90,7 @@ function ResizePopup(width: number, height:number) {
 
 
 function OpenURLInPopup(url) {
-    var ifrm = document.createElement("iframe");
+    var ifrm = window.top.document.createElement("iframe");
     ifrm.setAttribute("src", url);
     ifrm.style.position = "fixed";
     ifrm.style.top = "30px";
@@ -105,7 +105,7 @@ function OpenURLInPopup(url) {
     ifrm.style.opacity = "0";
     ifrm.style.transitionProperty = "opacity";
     ifrm.style.transitionDuration = ".2s";
-    document.body.appendChild(ifrm);
+    window.top.document.body.appendChild(ifrm);
     ifrm.focus();
 }
 

@@ -11,6 +11,8 @@ namespace ReactViewControl.WebServer {
     public static class ServerAPI {
 
         public static string StarterURL;
+        static readonly List<ServerView> ServerViews = new List<ServerView>();
+
 
         public static Stream GetCustomResource(string nativeobjectname, string customPath, out string extension) {
             var nativeObject = nativeobjectname != "" ? ServerViews.FirstOrDefault(conn => conn.NativeAPIName == nativeobjectname) : ServerViews.Last();
@@ -18,7 +20,9 @@ namespace ReactViewControl.WebServer {
         }
         public static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs, string path) {
             var serverView = ServerViews.Find(conn => conn.NativeAPIName == path.Substring(1));
-            serverView.SetSocket(socket);
+            if (serverView != null) {
+                serverView.SetSocket(socket);
+            }
         }
 
         readonly static string ReactViewResources = "ReactViewResources";
@@ -60,8 +64,6 @@ namespace ReactViewControl.WebServer {
         private static ServerView LastConnectionWithActivity() {
             return ServerViews.Where(serverView => serverView.IsOpen()).OrderByDescending(serverView => serverView.LastActivity).FirstOrDefault();
         }
-
-        static readonly List<ServerView> ServerViews = new List<ServerView>();
 
         internal static void CloseSocket(ServerView serverView) {
             ServerViews.Remove(serverView);

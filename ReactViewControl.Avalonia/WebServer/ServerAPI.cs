@@ -71,6 +71,13 @@ namespace ReactViewControl.WebServer {
                 Environment.Exit(0);
             }
         }
+        public static void OpenURL(Uri uri) {
+            while (LastConnectionWithActivity() == null) {
+                Task.Delay(1);
+            }
+            var text = $"{{ \"OpenURL\": \"{JsonEncodedText.Encode(uri.AbsoluteUri)}\", \"Arguments\":[] }}";
+            _ = LastConnectionWithActivity().SendWebSocketMessage(text);
+        }
 
     }
 }

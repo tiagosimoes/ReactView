@@ -61,6 +61,9 @@ namespace ReactViewWebServer {
             });
         }
 
+        internal static void OpenURL(Uri uri) {
+            ServerAPI.OpenURL(uri);
+        }
 
         private static void ConfigureCachingHeaders(HttpContext context) {
             if (context.Request.Host.Value != "localhost") {

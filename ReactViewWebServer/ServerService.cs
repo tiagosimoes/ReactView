@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -48,6 +49,10 @@ namespace ReactViewWebServer {
                 server.StopAsync().Wait();
             }
             // Down
+        }
+
+        public static void OpenURL(Uri uri) {
+            ServerConfigStartup.OpenURL(uri);
         }
     }
 }

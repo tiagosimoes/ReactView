@@ -7,6 +7,11 @@
     <Configurations>Debug;Release;ReleaseAvalonia;ReleaseWPF</Configurations>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+      <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+      <OutputPath>..\..\ServiceStudio\Build\$(Configuration)</OutputPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="node_modules\%40types\**" />
     <Compile Remove="node_modules\csstype\**" />

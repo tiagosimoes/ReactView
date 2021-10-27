@@ -16,10 +16,10 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
 
-    <!--<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>C:\GIT\PlatformMaster\ServiceStudio\Build\Debug_Hybrid\</OutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-  </PropertyGroup>>-->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+      <OutputPath>..\..\ServiceStudio\Build\$(Configuration)</OutputPath>
+      <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
 
     <ItemGroup>
     <Compile Include="..\ReactViewControl\EditCommands.cs" Link="EditCommands.cs" />

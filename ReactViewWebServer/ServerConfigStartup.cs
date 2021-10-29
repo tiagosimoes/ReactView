@@ -40,10 +40,10 @@ namespace ReactViewWebServer {
                         var customPath = path.Value.Substring(path.Value.IndexOf(prefix)).Replace(prefix, "") + context.Request.QueryString;
                         string referer = context.Request.Headers["Referer"];
                         var nativeobjectname = Regex.Match(referer ?? "", "__NativeAPI__\\d*").Value;
-                        using (Stream stream = ServerAPI.GetCustomResource(nativeobjectname, customPath, out string extension)) {
-                            context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
-                            await stream.CopyToAsync(context.Response.Body);
-                        }
+                        Stream stream = ServerAPI.GetCustomResource(nativeobjectname, customPath, out string extension);
+                        context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
+                        await stream.CopyToAsync(context.Response.Body);
+                        stream.Position = 0;
                     } else if (path.Value == "/") {
                         while (ServerAPI.StarterURL == null) {
                         }

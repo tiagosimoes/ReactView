@@ -53,8 +53,6 @@ namespace ReactViewControl.WebServer {
                 }
             }
 
-
-            var serializedObject = SerializedObject.SerializeObject(objectToBind);
             registeredObjects[name] = objectToBind;
             registeredObjectInterceptMethods[name] = CallTargetMethod;
             if (registeredObjects.Count == 1) {
@@ -62,15 +60,13 @@ namespace ReactViewControl.WebServer {
                 NativeAPIName = name;
                 ServerAPI.NewNativeObject(this);
             }
-            var text = $"{{ \"RegisterObjectName\": \"{name}\", \"Object\": {serializedObject} }}";
-            _ = SendWebSocketMessage(text);
+            _ = SendWebSocketMessageRegister(name, objectToBind);
             return true;
         }
 
         public void UnregisterWebJavaScriptObject(string name) {
-            var text = $"{{ \"UnregisterObjectName\": \"{name}\"}}";
             if (registeredObjects.ContainsKey(name)) {
-                _ = SendWebSocketMessage(text);
+                _ = SendWebSocketMessage(ServerAPI.Operation.UnregisterObjectName, name);
                 registeredObjects.Remove(name);
             }
         }
@@ -81,20 +77,17 @@ namespace ReactViewControl.WebServer {
 
         public void ExecuteWebScriptFunctionWithSerializedParams(string functionName, params object[] args) {
             functionName = functionName.Replace("embedded://webview/", "/");
-            var text = $"{{ \"Execute\": \"{JsonEncodedText.Encode(functionName)}\", \"Arguments\": {JsonSerializer.Serialize(args)} }}";
-            _ = SendWebSocketMessage(text);
+            _ = SendWebSocketMessage(ServerAPI.Operation.Execute, functionName, JsonSerializer.Serialize(args));
         }
         private void ReturnValue(float callKey, object value) {
-            var text = $"{{ \"ReturnValue\": \"{callKey}\", \"Arguments\": {JsonSerializer.Serialize(value)} }}";
-            _ = SendWebSocketMessage(text);
+            _ = SendWebSocketMessage(ServerAPI.Operation.ReturnValue, callKey.ToString(), JsonSerializer.Serialize(value));
         }
 
         private readonly Dictionary<string, JsonElement> evaluateResults = new Dictionary<string, JsonElement>();
 
         internal Task<T> EvaluateScriptFunctionWithSerializedParams<T>(string method, object[] args) {
             var evaluateKey = Guid.NewGuid().ToString();
-            var text = $"{{ \"EvaluateScriptFunctionWithSerializedParams\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}\", \"Arguments\": {JsonSerializer.Serialize(args)} }}";
-            _ = SendWebSocketMessage(text);
+            _ = SendWebSocketMessageEvaluate(method, evaluateKey, args);
             while (!evaluateResults.ContainsKey(evaluateKey)) {
                 Task.Delay(50);
             }
@@ -133,7 +126,19 @@ namespace ReactViewControl.WebServer {
 
         private WebSocket webSocket;
 
-        internal async Task SendWebSocketMessage(string message) {
+        internal async Task SendWebSocketMessage(ServerAPI.Operation operation, string value, string arguments = "[]") {
+            await SendWebSocketMessage($"{{ \"{operation}\": \"{JsonEncodedText.Encode(value)}\", \"Arguments\":{arguments} }}");
+        }
+
+        private async Task SendWebSocketMessageRegister(string name, object objectToBind) {
+            await SendWebSocketMessage($"{{ \"{ServerAPI.Operation.RegisterObjectName}\": \"{name}\", \"Object\": {SerializedObject.SerializeObject(objectToBind)} }}");
+        }
+
+        private async Task SendWebSocketMessageEvaluate(string method, string evaluateKey, object[] args) {
+            await SendWebSocketMessage($"{{ \"{ServerAPI.Operation.EvaluateScriptFunctionWithSerializedParams}\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}, \"Arguments\":{JsonSerializer.Serialize(args)} }}");
+        }
+
+        private async Task SendWebSocketMessage(string message) {
             var stream = Encoding.UTF8.GetBytes(message);
             while (webSocket == null) {
                 await Task.Delay(10);
@@ -169,11 +174,10 @@ namespace ReactViewControl.WebServer {
                 await Task.Delay(100);
                 var dimensions = nativeAPI.ViewRender.Bounds;
                 if (dimensions.Width != 0) {
-                    var text = $"{{ \"ResizePopup\": \"ResizePopup\", \"Arguments\": {JsonSerializer.Serialize(dimensions)} }}";
                     while (webSocket == null) {
                         await Task.Delay(10);
                     }
-                    _ = SendWebSocketMessage(text);
+                    _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, "ResizePopup", JsonSerializer.Serialize(dimensions));
                 }
             }
         }

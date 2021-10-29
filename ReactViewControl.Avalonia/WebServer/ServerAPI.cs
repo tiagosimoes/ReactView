@@ -13,6 +13,17 @@ namespace ReactViewControl.WebServer {
         public static string StarterURL;
         static readonly List<ServerView> ServerViews = new List<ServerView>();
 
+        public enum Operation {
+            RegisterObjectName,
+            UnregisterObjectName,
+            EvaluateScriptFunctionWithSerializedParams,
+            Execute,
+            ResizePopup,
+            ReturnValue,
+            OpenURL,
+            OpenURLInPopup,
+            OpenTooltip
+        }
 
         public static Stream GetCustomResource(string nativeobjectname, string customPath, out string extension) {
             var nativeObject = nativeobjectname != "" ? ServerViews.FirstOrDefault(conn => conn.NativeAPIName == nativeobjectname) : ServerViews.Last();
@@ -38,25 +49,23 @@ namespace ReactViewControl.WebServer {
                     while (LastConnectionWithActivity() == null) {
                         Task.Delay(1);
                     }
-                    var text = $"{{ \"";
+                    Operation operation;
                     switch (serverView.GetViewName()) {
                         case "AIContextSuggestionsMenuView":
                         case "ReactViewHostForPlugins":
+                        case "OutSystemsBrowserLoadingView":
                         case "DialogView":
-                            text += "OpenURLInPopup";
+                            operation = Operation.OpenURLInPopup;
                             break;
                         case "TooltipView":
                             // TODO TCS, fix tooltips 
-                            //text += "OpenTooltip";
-                            //break;
                             return;
                         case "WorkspaceView":
                         default:
-                            text += "OpenURL";
+                            operation = Operation.OpenURL;
                             break;
                     }
-                    text += $"\": \"{JsonEncodedText.Encode(url)}\", \"Arguments\":[] }}";
-                    _ = LastConnectionWithActivity().SendWebSocketMessage(text);
+                    _ = LastConnectionWithActivity().SendWebSocketMessage(operation, url);
                 });
             }
         }
@@ -75,8 +84,7 @@ namespace ReactViewControl.WebServer {
             while (LastConnectionWithActivity() == null) {
                 Task.Delay(1);
             }
-            var text = $"{{ \"OpenURL\": \"{JsonEncodedText.Encode(uri.AbsoluteUri)}\", \"Arguments\":[] }}";
-            _ = LastConnectionWithActivity().SendWebSocketMessage(text);
+            _ = LastConnectionWithActivity().SendWebSocketMessage(Operation.OpenURL, uri.AbsoluteUri);
         }
 
     }

@@ -41,9 +41,7 @@ namespace ReactViewWebServer {
                         string referer = context.Request.Headers["Referer"];
                         var nativeobjectname = Regex.Match(referer ?? "", "__NativeAPI__\\d*").Value;
                         Stream stream = ServerAPI.GetCustomResource(nativeobjectname, customPath, out string extension);
-                        context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
-                        await stream.CopyToAsync(context.Response.Body);
-                        stream.Position = 0;
+                        await ResponseStream(context, stream, extension);
                     } else if (path.Value == "/") {
                         while (ServerAPI.StarterURL == null) {
                         }
@@ -52,13 +50,17 @@ namespace ReactViewWebServer {
                         if (path == "/favicon.ico") {
                             path = "/ServiceStudio.Common/Images/OutSystems.ico";
                         }
-                        using (Stream stream = ResourcesManager.TryGetResource(path, true, out string extension)) {
-                            context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
-                            await stream.CopyToAsync(context.Response.Body);
-                        }
+                        Stream stream = ResourcesManager.TryGetResource(path, true, out string extension);
+                        await ResponseStream(context, stream, extension);
                     }
                 }
             });
+        }
+
+        private static async Task ResponseStream(HttpContext context, Stream stream, string extension) {
+            stream.Position = 0;
+            context.Response.ContentType = ResourcesManager.GetExtensionMimeType(extension);
+            await stream.CopyToAsync(context.Response.Body);
         }
 
         internal static void OpenURL(Uri uri) {

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Avalonia.Controls;
 using ReactViewControl.WebServer;
 using WebViewControl;
 using Xilium.CefGlue;
@@ -617,6 +618,10 @@ namespace ReactViewControl {
                 throw new InvalidOperationException("Unable to find calling method");
             }
             return userMethod;
+        }
+
+        internal void OpenContextMenu(ContextMenu value) {
+            ServerView.OpenContextMenu(value);
         }
     }
 }

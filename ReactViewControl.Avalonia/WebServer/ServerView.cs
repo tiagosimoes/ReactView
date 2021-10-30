@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
@@ -8,7 +7,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 
 namespace ReactViewControl.WebServer {
@@ -91,8 +91,41 @@ namespace ReactViewControl.WebServer {
             while (!evaluateResults.ContainsKey(evaluateKey)) {
                 Task.Delay(50);
             }
-            return Task.FromResult<T>(JsonSerializer.Deserialize<T>((evaluateResults[evaluateKey]).GetRawText()));
+            return Task.FromResult(JsonSerializer.Deserialize<T>((evaluateResults[evaluateKey]).GetRawText()));
         }
+
+        internal void OpenContextMenu(ContextMenu menu) {
+            IEnumerable<object> menuItems = GetMenuItems(menu.Items);
+            _ = SendWebSocketMessage(ServerAPI.Operation.OpenContextMenu, JsonSerializer.Serialize(menuItems, new JsonSerializerOptions() { IncludeFields = true }));
+        }
+
+        private static IEnumerable<object> GetMenuItems(System.Collections.IEnumerable items) {
+            return items.OfType<object>().Where(item => (item as MenuItem)?.IsVisible ?? true).Select(item =>
+                    (item is MenuItem menuItem) ? (object)new WebMenuItem(menuItem) : new WebMenuSeparator()
+            );
+        }
+
+        class WebMenuItem {
+            public string Header;
+            public bool IsEnabled;
+            public bool IsVisible;
+            public Image Icon;
+            public bool IsBold;
+            public int HashCode;
+            public IEnumerable<object> Items;
+
+            public WebMenuItem(MenuItem menuItem) {
+                Header = (string)menuItem.Header;
+                IsEnabled = menuItem.IsEnabled;
+                IsVisible = menuItem.IsVisible;
+                HashCode = menuItem.GetHashCode();
+                //Icon = (Image)menuItem.Icon;
+                IsBold = menuItem.FontWeight == Avalonia.Media.FontWeight.Bold;
+                Items = GetMenuItems(menuItem.Items);
+            }
+        }
+
+        struct WebMenuSeparator {}
 
         private T ExecuteInUI<T>(Func<T> action) {
             if (Dispatcher.UIThread.CheckAccess()) {
@@ -109,7 +142,18 @@ namespace ReactViewControl.WebServer {
             if (text.StartsWith("{\"EvaluateKey\"")) {
                 var evaluateResult = SerializedObject.DeserializeEvaluateResult(text);
                 evaluateResults[evaluateResult.EvaluateKey] = evaluateResult.EvaluatedResult;
-
+            } else if (text.StartsWith("{\"MenuClicked\"")) {
+                var menuClicked = SerializedObject.DeserializeMenuClicked(text);
+                Dispatcher.UIThread.InvokeAsync(() => {
+                    var menu = nativeAPI.ViewRender.Host.ContextMenu;
+                    var clickedMenuItem = menu.Items.OfType<MenuItem>().FirstOrDefault(item => item.GetHashCode() == menuClicked.MenuClicked);
+                    if (clickedMenuItem != null) {
+                        clickedMenuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                        menu.Close();
+                    } else {
+                        menu.Close();
+                    }
+                });
             } else {
                 var methodCall = SerializedObject.DeserializeMethodCall(text);
                 var obj = registeredObjects[methodCall.ObjectName];
@@ -177,7 +221,9 @@ namespace ReactViewControl.WebServer {
                     while (webSocket == null) {
                         await Task.Delay(10);
                     }
-                    _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, "ResizePopup", JsonSerializer.Serialize(dimensions));
+                    if (webSocket.State == WebSocketState.Open) { 
+                        _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, "ResizePopup", JsonSerializer.Serialize(dimensions));
+                    }
                 }
             }
         }
@@ -188,4 +234,4 @@ namespace ReactViewControl.WebServer {
             SetPopupDimensionsIfNeeded();
         }
     }
- }
+}

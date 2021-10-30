@@ -131,5 +131,14 @@ namespace ReactViewControl.WebServer {
                 );
             }
         }
+
+        public struct MenuClickedObject {
+#pragma warning disable CS0649
+            public int MenuClicked;
+        }
+
+        internal static MenuClickedObject DeserializeMenuClicked(string text) {
+            return JsonSerializer.Deserialize<MenuClickedObject>(text, new JsonSerializerOptions { IncludeFields = true });
+        }
     }
 }

@@ -1,7 +1,9 @@
 ﻿import { nativeAPIObjectName } from "./Internal/Environment";
+import { disableMouseInteractions, enableMouseInteractions } from "./Internal/InputManager";
 
 var returnValues = new Object();
 var websocket;
+var mouseX, mouseY;
 
 export async function setWebSocketsConnection() {
     websocket = await new Promise<WebSocket>((resolve) => {
@@ -20,7 +22,8 @@ export async function setWebSocketsConnection() {
         websocket.onmessage = onWebSocketMessageReceived;
         websocket.onclose = () => window.close();
     }
-
+    document.onmousemove = (event: PointerEvent) => { mouseX = event.clientX; mouseY = event.clientY };
+    document.body.oncontextmenu = () => false;
 }
 
 enum Operation {
@@ -32,7 +35,8 @@ enum Operation {
     ReturnValue,
     OpenURL,
     OpenURLInPopup,
-    OpenTooltip
+    OpenTooltip,
+    OpenContextMenu
 }
 
 function onWebSocketMessageReceived(event) {
@@ -77,6 +81,9 @@ function onWebSocketMessageReceived(event) {
         case Operation[Operation.OpenURL]:
             window.open(objectNameValue, "_blank")?.focus();
             break;
+        case Operation[Operation.OpenContextMenu]:
+            OpenMenu(JSON.parse(objectNameValue));
+            break;
         case Operation[Operation.OpenURLInPopup]:
         case Operation[Operation.OpenTooltip]:
             OpenURLInPopup(objectNameValue);
@@ -84,6 +91,50 @@ function onWebSocketMessageReceived(event) {
         default:
             throw "NotImplemented";
     }
+}
+
+function OpenMenu(menus) {
+    var divMenu = document.createElement("div");
+    divMenu.style.position = "absolute";
+    divMenu.style.padding = "5px 0";
+    divMenu.style.border = "1px solid #ccc";
+    divMenu.style.borderRadius = "2px";
+    divMenu.style.background = "#fff";
+    divMenu.style.boxShadow = "2px 2px 4px #ccc";
+    var menuClicked = (hashCode) => {
+        websocket.send(JSON.stringify({ "MenuClicked": hashCode }));
+        enableMouseInteractions();
+        document.body.removeChild(divMenu);
+    }
+    menus.forEach((menuItem) => {
+        var subMenuItem;
+        if (menuItem.Header != null) {
+            subMenuItem = document.createElement("div");
+            subMenuItem.dataset.Header = menuItem.Header;
+            subMenuItem.textContent = menuItem.Header.replace("_", "");
+            subMenuItem.style.padding = "5px 10px";
+            subMenuItem.onclick = () => menuClicked(menuItem.HashCode);
+            subMenuItem.style.color = menuItem.IsEnabled ? "var(--body-font-color)" : "var(--text-disabled-color)";
+        } else {
+            subMenuItem = document.createElement("hr");
+            subMenuItem.style.border = "0px";
+            subMenuItem.style.borderTop = "1px solid #ccc";
+            subMenuItem.style.margin = "5px 0";
+        }
+        divMenu.appendChild(subMenuItem);
+    });
+    divMenu.style.opacity = "0";
+    document.body.appendChild(divMenu);
+    divMenu.style.left = mouseX + Math.min(document.body.clientWidth - (mouseX + divMenu.offsetWidth), 0) + "px";
+    divMenu.style.top = mouseY + Math.min(document.body.clientHeight - (mouseY + divMenu.offsetHeight), 0) + "px";
+    disableMouseInteractions();
+    var root_layer = document.getElementById("webview_root_layer") as HTMLElement;
+    if (root_layer != null) {
+        root_layer.onmousedown = () => menuClicked(0);
+    }
+    divMenu.style.zIndex = "2147483647";
+    divMenu.style.transition = "opacity .2s";
+    divMenu.style.opacity = "1";
 }
 
 function ResizePopup(width: number, height: number) {
@@ -126,6 +177,7 @@ function execute(script, args) {
 }
 
 function registerObject(registerObjectName: string, object: any) {
+    var lowerFirstLetter = (string)  => string.charAt(0).toLowerCase() + string.slice(1);
     window[registerObjectName] = new Object() as any;
     var windowObject = window[registerObjectName] as any;
     object.methods.forEach(function (method) {
@@ -166,10 +218,6 @@ async function getReturnValue(callKey: number, methodCall: object): Promise<obje
             }
         }, 30000)
     });
-}
-
-function lowerFirstLetter(string) {
-    return string.charAt(0).toLowerCase() + string.slice(1);
 }
 
 

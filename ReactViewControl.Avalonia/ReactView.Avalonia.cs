@@ -1,4 +1,5 @@
 ﻿using System;
+using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
 using WebViewControl;
@@ -31,5 +32,14 @@ namespace ReactViewControl {
         }
 
         protected override void InternalDispose() => Dispose();
+
+        new public ContextMenu ContextMenu {
+            set {
+                base.ContextMenu = value;
+                View.OpenContextMenu(value);
+            }
+            get => base.ContextMenu;
+        }
+
     }
 }

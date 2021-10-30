@@ -22,7 +22,8 @@ namespace ReactViewControl.WebServer {
             ReturnValue,
             OpenURL,
             OpenURLInPopup,
-            OpenTooltip
+            OpenTooltip,
+            OpenContextMenu
         }
 
         public static Stream GetCustomResource(string nativeobjectname, string customPath, out string extension) {

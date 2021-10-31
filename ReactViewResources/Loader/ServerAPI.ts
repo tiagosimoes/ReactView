@@ -70,6 +70,11 @@ function onWebSocketMessageReceived(event) {
             break;
         case Operation[Operation.Execute]:
             execute(objectNameValue, object.Arguments)
+            if (objectNameValue == "__Modules__(\"\",\"0\",\"Dialog.view\").setInnerView") {
+                var ifrm = window.frameElement as HTMLFrameElement;
+                ifrm.style.width = (document.body.firstElementChild as HTMLElement)?.offsetWidth + "px";
+                ifrm.style.height = document.body.scrollHeight + "px";
+            }
             break;
         case Operation[Operation.ResizePopup]:
             ResizePopup(JSON.parse(objectNameValue));
@@ -139,16 +144,21 @@ function OpenMenu(menus) {
 function ResizePopup(windowSettings: object) {
     var ifrm = window.frameElement as HTMLFrameElement;
     var titleMinHeight = 36;
-    ifrm.style.height = (windowSettings["Height"] + titleMinHeight)+ "px";
+    let isResizable = windowSettings["IsResizable"] as Boolean
+    if (isResizable) { 
+        ifrm.style.height = (windowSettings["Height"] + titleMinHeight) + "px";
+        ifrm.style.resize = "both";
+    } else {
+        ifrm.style.height = windowSettings["Height"] + "px";
+    }
     ifrm.style.width = windowSettings["Width"] + "px";
-    ifrm.style.resize = windowSettings["IsResizable"] ? "both" : "none";
     SetDialogTitle();
     setTimeout(() => ifrm.style.opacity = "1", 200);
     function SetDialogTitle() {
         var title = ifrm.contentDocument!.createElement("div");
         var frameRoot = ifrm.contentDocument!.getElementById("webview_root");
-        frameRoot!.style.height = "calc(100% - " + titleMinHeight + "px)";
         ifrm.contentDocument!.body.insertBefore(title, frameRoot);
+        frameRoot!.style.height = "calc(100% - " + titleMinHeight + "px)";
         title.textContent = windowSettings["Title"];
         title.style.background = "var(--body-background-color)";
         title.style.padding = "10px 15px";
@@ -162,7 +172,6 @@ function ResizePopup(windowSettings: object) {
         closeButton.style.right = "16px";
         closeButton.onclick = () => websocket.send(JSON.stringify({ "CloseWindow": true }));
         title.appendChild(closeButton);
-        /* Missing close ✕*/
         title.draggable = true;
         title.ondragstart = (event: DragEvent) => {
             ifrm.dataset.xOffset = ((event.screenX - ifrm.offsetLeft) as unknown as string);

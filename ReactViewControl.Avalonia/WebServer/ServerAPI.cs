@@ -74,7 +74,7 @@ namespace ReactViewControl.WebServer {
         }
 
         private static ServerView LastConnectionWithActivity() {
-            return ServerViews.Where(serverView => serverView.IsOpen()).OrderByDescending(serverView => serverView.LastActivity).FirstOrDefault();
+            return ServerViews.Where(serverView => serverView.IsSocketOpen()).OrderByDescending(serverView => serverView.LastActivity).FirstOrDefault();
         }
 
         internal static void CloseSocket(ServerView serverView) {

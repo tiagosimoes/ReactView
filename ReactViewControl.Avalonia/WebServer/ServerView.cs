@@ -71,7 +71,7 @@ namespace ReactViewControl.WebServer {
             }
         }
 
-        internal bool IsOpen() {
+        internal bool IsSocketOpen() {
             return webSocket != null && webSocket.State == WebSocketState.Open;
         }
 
@@ -192,7 +192,9 @@ namespace ReactViewControl.WebServer {
             while (webSocket == null) {
                 await Task.Delay(10);
             }
-            await webSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
+            if (IsSocketOpen()) {
+                await webSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
         }
 
         private async Task ListenForMessages(WebSocket webSocket) {
@@ -229,9 +231,7 @@ namespace ReactViewControl.WebServer {
                         IsResizable = window.CanResize
                     };
                 });
-                if (webSocket.State == WebSocketState.Open) {
-                    _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true}));
-                }
+                _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true}));
             }
         }
 

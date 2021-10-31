@@ -151,7 +151,13 @@ namespace ReactViewControl.WebServer {
                 var menuClicked = SerializedObject.DeserializeMenuClicked(text);
                 Dispatcher.UIThread.InvokeAsync(() => {
                     var menu = nativeAPI.ViewRender.Host.ContextMenu;
-                    var clickedMenuItem = menu.Items.OfType<MenuItem>().FirstOrDefault(item => item.GetHashCode() == menuClicked.MenuClicked);
+                    IEnumerable<MenuItem> GetAllSubMenuItems(MenuItem menuItem) {
+                        return new[] {menuItem}.Concat(
+                            menuItem.Items.OfType<MenuItem>().SelectMany(subMenuItem => GetAllSubMenuItems(subMenuItem)));
+                    }
+                    var allMenuItems = menu.Items.OfType<MenuItem>().SelectMany(item => GetAllSubMenuItems(item));
+                    var clickedMenuItem = allMenuItems.FirstOrDefault(item => item.GetHashCode() == menuClicked.MenuClicked);
+                    
                     if (clickedMenuItem != null) {
                         clickedMenuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
                         menu.Close();

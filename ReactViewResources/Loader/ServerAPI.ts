@@ -99,6 +99,7 @@ function onWebSocketMessageReceived(event) {
 
 function OpenMenu(menus) {
     var divMenu = document.createElement("div");
+    divMenu.classList.add("serverview_contextMenu");
     divMenu.style.position = "absolute";
     divMenu.style.padding = "5px 0";
     divMenu.style.border = "1px solid #ccc";
@@ -108,7 +109,7 @@ function OpenMenu(menus) {
     var menuClicked = (hashCode) => {
         websocket.send(JSON.stringify({ "MenuClicked": hashCode }));
         enableMouseInteractions();
-        document.body.removeChild(divMenu);
+        document.querySelectorAll(".serverview_contextMenu").forEach(elem => document.body.removeChild(elem))
     }
     menus.forEach((menuItem) => {
         var subMenuItem;
@@ -117,8 +118,8 @@ function OpenMenu(menus) {
             subMenuItem.dataset.Header = menuItem.Header;
             subMenuItem.textContent = menuItem.Header.replace("_", "");
             subMenuItem.style.padding = "5px 10px";
-            subMenuItem.onclick = () => menuClicked(menuItem.HashCode);
             subMenuItem.style.color = menuItem.IsEnabled ? "var(--body-font-color)" : "var(--text-disabled-color)";
+            subMenuItem.onclick = () => menuItem.Items.length > 0 ? OpenMenu(menuItem.Items): menuClicked(menuItem.HashCode);
         } else {
             subMenuItem = document.createElement("hr"); /* separator */
             subMenuItem.style.border = "0px";
@@ -134,7 +135,7 @@ function OpenMenu(menus) {
     disableMouseInteractions();
     var root_layer = document.getElementById("webview_root_layer") as HTMLElement;
     if (root_layer != null) {
-        root_layer.onmousedown = () => menuClicked(0);
+        root_layer.addEventListener("mousedown", () => menuClicked(0));
     }
     divMenu.style.zIndex = "2147483647";
     divMenu.style.transition = "opacity .2s";

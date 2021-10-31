@@ -51,7 +51,11 @@ namespace ReactViewWebServer {
                             path = "/ServiceStudio.Common/Images/OutSystems.ico";
                         }
                         Stream stream = ResourcesManager.TryGetResource(path, true, out string extension);
-                        await ResponseStream(context, stream, extension);
+                        if (stream != null) {
+                            await ResponseStream(context, stream, extension);
+                        } else {
+                            context.Response.StatusCode = StatusCodes.Status404NotFound;
+                        }
                     }
                 }
             });

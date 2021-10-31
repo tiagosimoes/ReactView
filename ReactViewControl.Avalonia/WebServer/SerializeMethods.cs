@@ -124,8 +124,6 @@ namespace ReactViewControl.WebServer {
                 action();
                 return;
             } else {
-                //Dispatcher.UIThread.InvokeAsync(action);
-
                 System.Threading.Tasks.Task.Run(() =>
                     action()
                 );

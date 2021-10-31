@@ -142,7 +142,12 @@ namespace ReactViewControl.WebServer {
             if (text.StartsWith("{\"EvaluateKey\"")) {
                 var evaluateResult = SerializedObject.DeserializeEvaluateResult(text);
                 evaluateResults[evaluateResult.EvaluateKey] = evaluateResult.EvaluatedResult;
-            } else if (text.StartsWith("{\"MenuClicked\"")) {
+            } else if (text.StartsWith($"{{\"{ServerAPI.Operation.CloseWindow}\"")) {
+                Dispatcher.UIThread.InvokeAsync(() => {
+                    var window = nativeAPI.ViewRender.Host.Parent as Window;
+                    window.Close();
+                });
+            } else if (text.StartsWith($"{{\"{ServerAPI.Operation.MenuClicked}\"")) {
                 var menuClicked = SerializedObject.DeserializeMenuClicked(text);
                 Dispatcher.UIThread.InvokeAsync(() => {
                     var menu = nativeAPI.ViewRender.Host.ContextMenu;
@@ -213,7 +218,7 @@ namespace ReactViewControl.WebServer {
         private async void SetPopupDimensionsIfNeeded() {
             if (GetViewName() == "ReactViewHostForPlugins" || GetViewName() == "DialogView") {
                 while (!nativeAPI.ViewRender.IsInitialized) {
-                    await Task.Delay(10);
+                    await Task.Delay(100);
                 }
                 var windowSettings = ExecuteInUI(() => {
                     var window = (Window)nativeAPI.ViewRender.Host.Parent;

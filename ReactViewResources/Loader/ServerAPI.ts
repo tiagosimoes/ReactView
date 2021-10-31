@@ -36,7 +36,9 @@ enum Operation {
     OpenURL,
     OpenURLInPopup,
     OpenTooltip,
-    OpenContextMenu
+    OpenContextMenu,
+    MenuClicked,
+    CloseWindow
 }
 
 function onWebSocketMessageReceived(event) {
@@ -68,9 +70,6 @@ function onWebSocketMessageReceived(event) {
             break;
         case Operation[Operation.Execute]:
             execute(objectNameValue, object.Arguments)
-            //if (objectNameValue == "__Modules__(\"\",\"0\",\"Dialog.view\").setInnerView") {
-            //    ResizePopup((document.body.firstElementChild as HTMLElement)?.offsetWidth, document.body.scrollHeight);
-            //}
             break;
         case Operation[Operation.ResizePopup]:
             ResizePopup(JSON.parse(objectNameValue));
@@ -116,7 +115,7 @@ function OpenMenu(menus) {
             subMenuItem.onclick = () => menuClicked(menuItem.HashCode);
             subMenuItem.style.color = menuItem.IsEnabled ? "var(--body-font-color)" : "var(--text-disabled-color)";
         } else {
-            subMenuItem = document.createElement("hr");
+            subMenuItem = document.createElement("hr"); /* separator */
             subMenuItem.style.border = "0px";
             subMenuItem.style.borderTop = "1px solid #ccc";
             subMenuItem.style.margin = "5px 0";
@@ -139,7 +138,8 @@ function OpenMenu(menus) {
 
 function ResizePopup(windowSettings: object) {
     var ifrm = window.frameElement as HTMLFrameElement;
-    ifrm.style.height = (windowSettings["Height"] + 36)+ "px";
+    var titleMinHeight = 36;
+    ifrm.style.height = (windowSettings["Height"] + titleMinHeight)+ "px";
     ifrm.style.width = windowSettings["Width"] + "px";
     ifrm.style.resize = windowSettings["IsResizable"] ? "both" : "none";
     SetDialogTitle();
@@ -147,14 +147,21 @@ function ResizePopup(windowSettings: object) {
     function SetDialogTitle() {
         var title = ifrm.contentDocument!.createElement("div");
         var frameRoot = ifrm.contentDocument!.getElementById("webview_root");
-        frameRoot!.style.height = "calc(100% - 36px)";
+        frameRoot!.style.height = "calc(100% - " + titleMinHeight + "px)";
         ifrm.contentDocument!.body.insertBefore(title, frameRoot);
         title.textContent = windowSettings["Title"];
         title.style.background = "var(--body-background-color)";
         title.style.padding = "10px 15px";
+        title.style.minHeight = titleMinHeight + "px"
         title.style.color = "var(--aggregator-subeditor-header-text-color)";
         title.style.fontWeight = "var(--emphasize-font-weight)";
         title.style.fontSize = "13px";
+        var closeButton = ifrm.contentDocument!.createElement("span");
+        closeButton.textContent = "✕";
+        closeButton.style.position = "absolute";
+        closeButton.style.right = "16px";
+        closeButton.onclick = () => websocket.send(JSON.stringify({ "CloseWindow": true }));
+        title.appendChild(closeButton);
         /* Missing close ✕*/
         title.draggable = true;
         title.ondragstart = (event: DragEvent) => {

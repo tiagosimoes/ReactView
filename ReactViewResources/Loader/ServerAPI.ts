@@ -68,12 +68,12 @@ function onWebSocketMessageReceived(event) {
             break;
         case Operation[Operation.Execute]:
             execute(objectNameValue, object.Arguments)
-            if (objectNameValue == "__Modules__(\"\",\"0\",\"Dialog.view\").setInnerView") {
-                ResizePopup((document.body.firstElementChild as HTMLElement)?.offsetWidth, document.body.scrollHeight);
-            }
+            //if (objectNameValue == "__Modules__(\"\",\"0\",\"Dialog.view\").setInnerView") {
+            //    ResizePopup((document.body.firstElementChild as HTMLElement)?.offsetWidth, document.body.scrollHeight);
+            //}
             break;
         case Operation[Operation.ResizePopup]:
-            ResizePopup(object.Arguments["Width"], object.Arguments["Height"]);
+            ResizePopup(JSON.parse(objectNameValue));
             break;
         case Operation[Operation.ReturnValue]:
             returnValues[objectNameValue] = object.Arguments;
@@ -137,31 +137,58 @@ function OpenMenu(menus) {
     divMenu.style.opacity = "1";
 }
 
-function ResizePopup(width: number, height: number) {
-    var frameElem = window.frameElement as HTMLElement;
-    frameElem.style.height = height + "px";
-    frameElem.style.width = width + "px";
-    setTimeout(() => frameElem.style.opacity = "1", 200);
+function ResizePopup(windowSettings: object) {
+    var ifrm = window.frameElement as HTMLFrameElement;
+    ifrm.style.height = (windowSettings["Height"] + 36)+ "px";
+    ifrm.style.width = windowSettings["Width"] + "px";
+    ifrm.style.resize = windowSettings["IsResizable"] ? "both" : "none";
+    SetDialogTitle();
+    setTimeout(() => ifrm.style.opacity = "1", 200);
+    function SetDialogTitle() {
+        var title = ifrm.contentDocument!.createElement("div");
+        var frameRoot = ifrm.contentDocument!.getElementById("webview_root");
+        frameRoot!.style.height = "calc(100% - 36px)";
+        ifrm.contentDocument!.body.insertBefore(title, frameRoot);
+        title.textContent = windowSettings["Title"];
+        title.style.background = "var(--body-background-color)";
+        title.style.padding = "10px 15px";
+        title.style.color = "var(--aggregator-subeditor-header-text-color)";
+        title.style.fontWeight = "var(--emphasize-font-weight)";
+        title.style.fontSize = "13px";
+        /* Missing close ✕*/
+        title.draggable = true;
+        title.ondragstart = (event: DragEvent) => {
+            ifrm.dataset.xOffset = ((event.screenX - ifrm.offsetLeft) as unknown as string);
+            ifrm.dataset.yOffset = ((event.screenY - ifrm.offsetTop) as unknown as string);
+        };
+        title.ondrag = (event: DragEvent) => {
+            if (event.screenX > 0) {
+                ifrm.style.left = event.screenX - (ifrm.dataset.xOffset as any) + "px";
+                ifrm.style.top = event.screenY - (ifrm.dataset.yOffset as any) + "px";
+            }
+        };
+    }
 }
 
 function OpenURLInPopup(url) {
-    var ifrm = window.top.document.createElement("iframe");
-    ifrm.setAttribute("src", url);
+    var topDocument = window.top.document;
+    var ifrm = topDocument.createElement("iframe");
     ifrm.style.position = "fixed";
     ifrm.style.top = "30px";
     ifrm.style.left = "50%";
     ifrm.style.width = "1000px";
     ifrm.style.transform = "translate(-50%, 0)";
     ifrm.style.zIndex = "2147483647";
-    ifrm.style.resize = "both";
     ifrm.style.overflow = "auto";
-    ifrm.frameBorder = "0";
     ifrm.style.boxShadow = "2px 2px 6px #aaa";
     ifrm.style.opacity = "0";
     ifrm.style.transitionProperty = "opacity";
     ifrm.style.transitionDuration = ".2s";
-    window.top.document.body.appendChild(ifrm);
+    ifrm.frameBorder = "0";
+    ifrm.setAttribute("src", url);
     ifrm.focus();
+    topDocument.body.appendChild(ifrm);
+
 }
 
 function execute(script, args) {

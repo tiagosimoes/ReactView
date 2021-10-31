@@ -125,7 +125,7 @@ namespace ReactViewControl.WebServer {
             }
         }
 
-        struct WebMenuSeparator {}
+        struct WebMenuSeparator { }
 
         private T ExecuteInUI<T>(Func<T> action) {
             if (Dispatcher.UIThread.CheckAccess()) {
@@ -215,15 +215,17 @@ namespace ReactViewControl.WebServer {
                 while (!nativeAPI.ViewRender.IsInitialized) {
                     await Task.Delay(10);
                 }
-                await Task.Delay(100);
-                var dimensions = nativeAPI.ViewRender.Bounds;
-                if (dimensions.Width != 0) {
-                    while (webSocket == null) {
-                        await Task.Delay(10);
-                    }
-                    if (webSocket.State == WebSocketState.Open) { 
-                        _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, "ResizePopup", JsonSerializer.Serialize(dimensions));
-                    }
+                var windowSettings = ExecuteInUI(() => {
+                    var window = (Window)nativeAPI.ViewRender.Host.Parent;
+                    return new SerializedObject.WindowSettings() {
+                        Height = window.Height,
+                        Width = window.Width,
+                        Title = window.Title,
+                        IsResizable = window.CanResize
+                    };
+                });
+                if (webSocket.State == WebSocketState.Open) {
+                    _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true}));
                 }
             }
         }

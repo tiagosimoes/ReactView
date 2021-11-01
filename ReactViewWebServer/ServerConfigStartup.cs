@@ -35,11 +35,11 @@ namespace ReactViewWebServer {
                     ConfigureCachingHeaders(context);
                     // static resources
                     PathString path = context.Request.Path;
+                    var nativeobjectname = Regex.Match(path, "__NativeAPI__\\d*").Value;
+                    path = path.ToString().Replace($"/{nativeobjectname}/", "/ReactViewResources/");
                     string prefix = $"/custom/resource";
                     if (path.Value.Contains(prefix)) {
                         var customPath = path.Value.Substring(path.Value.IndexOf(prefix)).Replace(prefix, "") + context.Request.QueryString;
-                        string referer = context.Request.Headers["Referer"];
-                        var nativeobjectname = Regex.Match(referer ?? "", "__NativeAPI__\\d*").Value;
                         Stream stream = ServerAPI.GetCustomResource(nativeobjectname, customPath, out string extension);
                         await ResponseStream(context, stream, extension);
                     } else if (path.Value == "/") {

@@ -6,6 +6,10 @@ var websocket;
 var mouseX, mouseY;
 
 export async function setWebSocketsConnection() {
+    var base = document.createElement('base');
+    base.href = "/" + nativeAPIObjectName + "/";
+    document.head.appendChild(base);
+    history.pushState("", "", "/");
     websocket = await new Promise<WebSocket>((resolve) => {
         if (document.location.protocol.startsWith("http")) {
             var docLocation = document.location;
@@ -228,6 +232,9 @@ function registerObject(registerObjectName: string, object: any) {
         var methodName = method["MethodName"];
         if (method["ReturnType"].ClassName != "System.Void") {
             windowObject[lowerFirstLetter(methodName)] = async function (...theArgs) {
+                if (methodName == "GetBaseUrl" && registerObjectName.endsWith("UIEditorView")) {
+                    return "/"; // TODO TCS, fix the loading of UI Editor resources in a better way
+                }
                 var methodCall = { ObjectName: registerObjectName, MethodName: methodName, Args: theArgs, CallKey: Math.round(Math.random() * 1000000) };
                 websocket.send(JSON.stringify(methodCall));
                 return await getReturnValue(methodCall.CallKey, methodCall);

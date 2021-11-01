@@ -129,10 +129,7 @@ namespace ReactViewControl.WebServer {
         struct WebMenuSeparator { }
 
         private T ExecuteInUI<T>(Func<T> action) {
-            if (Dispatcher.UIThread.CheckAccess()) {
-                return action();
-            }
-            return Dispatcher.UIThread.InvokeAsync(action).Result;
+            return Dispatcher.UIThread.CheckAccess() ? action() : Dispatcher.UIThread.InvokeAsync(action).Result;
         }
 
         internal Stream GetCustomResource(string path, out string extension) {
@@ -144,40 +141,49 @@ namespace ReactViewControl.WebServer {
                 var evaluateResult = SerializedObject.DeserializeEvaluateResult(text);
                 evaluateResults[evaluateResult.EvaluateKey] = evaluateResult.EvaluatedResult;
             } else if (text.StartsWith($"{{\"{ServerAPI.Operation.CloseWindow}\"")) {
-                Dispatcher.UIThread.InvokeAsync(() => {
-                    var window = nativeAPI.ViewRender.Host.Parent as Window;
-                    window.Close();
-                });
+                CloseWindow();
             } else if (text.StartsWith($"{{\"{ServerAPI.Operation.MenuClicked}\"")) {
                 var menuClicked = SerializedObject.DeserializeMenuClicked(text);
-                Dispatcher.UIThread.InvokeAsync(() => {
-                    var menu = nativeAPI.ViewRender.Host.ContextMenu;
-                    IEnumerable<MenuItem> GetAllSubMenuItems(MenuItem menuItem) {
-                        return new[] {menuItem}.Concat(
-                            menuItem.Items.OfType<MenuItem>().SelectMany(subMenuItem => GetAllSubMenuItems(subMenuItem)));
-                    }
-                    var allMenuItems = menu.Items.OfType<MenuItem>().SelectMany(item => GetAllSubMenuItems(item));
-                    var clickedMenuItem = allMenuItems.FirstOrDefault(item => item.GetHashCode() == menuClicked.MenuClicked);
-                    
-                    if (clickedMenuItem != null) {
-                        clickedMenuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-                        menu.Close();
-                    } else {
-                        menu.Close();
-                    }
-                });
+                ClickOnMenuItem(menuClicked);
             } else {
                 var methodCall = SerializedObject.DeserializeMethodCall(text);
-                var obj = registeredObjects[methodCall.ObjectName];
-                var callTargetMethod = registeredObjectInterceptMethods[methodCall.ObjectName];
-                callTargetMethod(() => {
-                    var result = SerializedObject.ExecuteMethod(obj, methodCall);
-                    if (obj.GetType().GetMethod(methodCall.MethodName).ReturnType != typeof(void)) {
-                        ReturnValue(methodCall.CallKey, result);
-                    }
-                    return result;
-                });
+                ExecuteMethod(methodCall);
             }
+        }
+
+        private void ExecuteMethod(SerializedObject.MethodCall methodCall) {
+            var obj = registeredObjects[methodCall.ObjectName];
+            var callTargetMethod = registeredObjectInterceptMethods[methodCall.ObjectName];
+            callTargetMethod(() => {
+                var result = SerializedObject.ExecuteMethod(obj, methodCall);
+                if (obj.GetType().GetMethod(methodCall.MethodName).ReturnType != typeof(void)) {
+                    ReturnValue(methodCall.CallKey, result);
+                }
+                return result;
+            });
+        }
+
+        private void CloseWindow() {
+            Dispatcher.UIThread.InvokeAsync(() => {
+                var window = nativeAPI.ViewRender.Host.Parent as Window;
+                window.Close();
+            });
+        }
+
+        private void ClickOnMenuItem(SerializedObject.MenuClickedObject menuClicked) {
+            Dispatcher.UIThread.InvokeAsync(() => {
+                IEnumerable<MenuItem> GetAllSubMenuItems(MenuItem menuItem) {
+                    return new[] { menuItem }.Concat(
+                        menuItem.Items.OfType<MenuItem>().SelectMany(subMenuItem => GetAllSubMenuItems(subMenuItem)));
+                }
+                var menu = nativeAPI.ViewRender.Host.ContextMenu;
+                var allMenuItems = menu.Items.OfType<MenuItem>().SelectMany(item => GetAllSubMenuItems(item));
+                var clickedMenuItem = allMenuItems.FirstOrDefault(item => item.GetHashCode() == menuClicked.MenuClicked);
+                if (clickedMenuItem != null) {
+                    clickedMenuItem.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+                }
+                menu.Close();
+            });
         }
 
         private WebSocket webSocket;

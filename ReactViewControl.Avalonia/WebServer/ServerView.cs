@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -80,7 +81,7 @@ namespace ReactViewControl.WebServer {
             _ = SendWebSocketMessage(ServerAPI.Operation.Execute, functionName, JsonSerializer.Serialize(args));
         }
         private void ReturnValue(float callKey, object value) {
-            _ = SendWebSocketMessage(ServerAPI.Operation.ReturnValue, callKey.ToString(), JsonSerializer.Serialize(value));
+            _ = SendWebSocketMessage(ServerAPI.Operation.ReturnValue, callKey.ToString(), JsonSerializer.Serialize(value, new JsonSerializerOptions() { MaxDepth = 512 }));
         }
 
         private readonly Dictionary<string, JsonElement> evaluateResults = new Dictionary<string, JsonElement>();
@@ -190,7 +191,7 @@ namespace ReactViewControl.WebServer {
         }
 
         private async Task SendWebSocketMessageEvaluate(string method, string evaluateKey, object[] args) {
-            await SendWebSocketMessage($"{{ \"{ServerAPI.Operation.EvaluateScriptFunctionWithSerializedParams}\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}, \"Arguments\":{JsonSerializer.Serialize(args)} }}");
+            await SendWebSocketMessage($"{{ \"{ServerAPI.Operation.EvaluateScriptFunctionWithSerializedParams}\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}\", \"Arguments\":{JsonSerializer.Serialize(args)} }}");
         }
 
         private async Task SendWebSocketMessage(string message) {

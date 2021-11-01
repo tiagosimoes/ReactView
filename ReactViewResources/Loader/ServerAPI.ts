@@ -75,9 +75,11 @@ function onWebSocketMessageReceived(event) {
         case Operation[Operation.Execute]:
             execute(objectNameValue, object.Arguments)
             if (objectNameValue == "__Modules__(\"\",\"0\",\"Dialog.view\").setInnerView") {
-                var ifrm = window.frameElement as HTMLFrameElement;
-                ifrm.style.width = (document.body.firstElementChild as HTMLElement)?.offsetWidth + "px";
-                ifrm.style.height = document.body.scrollHeight + "px";
+                setTimeout(() => {
+                    var ifrm = window.frameElement as HTMLFrameElement;
+                    ifrm.style.width = (document.body.firstElementChild as HTMLElement)?.offsetWidth + "px";
+                    ifrm.style.height = document.body.scrollHeight + "px";
+                }, 200);
             }
             break;
         case Operation[Operation.ResizePopup]:

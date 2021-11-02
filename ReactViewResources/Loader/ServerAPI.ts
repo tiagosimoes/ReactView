@@ -1,9 +1,10 @@
 ﻿import { nativeAPIObjectName } from "./Internal/Environment";
-import { disableMouseInteractions, enableMouseInteractions } from "./Internal/InputManager";
+import { OpenURLInPopup, ResizePopup } from "./Internal/ServerAPIPopups";
+import { OpenMenu } from "./Internal/ServerAPIMenus";
+
 
 var returnValues = new Object();
 var websocket;
-var mouseX, mouseY;
 
 export async function setWebSocketsConnection() {
     var base = document.createElement('base');
@@ -26,8 +27,6 @@ export async function setWebSocketsConnection() {
         websocket.onmessage = onWebSocketMessageReceived;
         websocket.onclose = () => window.close();
     }
-    document.onmousemove = (event: PointerEvent) => { mouseX = event.clientX; mouseY = event.clientY };
-    document.body.oncontextmenu = () => false;
 }
 
 enum Operation {
@@ -74,17 +73,11 @@ function onWebSocketMessageReceived(event) {
             break;
         case Operation[Operation.Execute]:
             execute(objectNameValue, object.Arguments)
-            if (objectNameValue == "__Modules__(\"\",\"0\",\"LayoutManager\").setAdjustSizeToContent") {
-                setTimeout(() => {
-                    var ifrm = window.frameElement as HTMLFrameElement;
-                    var root = document.getElementById("webview_root");
-                    ifrm.style.width = root?.offsetWidth + "px";
-                    ifrm.style.height = document.body.scrollHeight + "px";
-                }, 500); 
-            }
             break;
         case Operation[Operation.ResizePopup]:
-            ResizePopup(JSON.parse(objectNameValue));
+            setTimeout(() =>
+                ResizePopup(JSON.parse(objectNameValue), () => websocket.send(JSON.stringify({ "CloseWindow": true })))
+            , 200);
             break;
         case Operation[Operation.ReturnValue]:
             returnValues[objectNameValue] = object.Arguments;
@@ -93,7 +86,7 @@ function onWebSocketMessageReceived(event) {
             window.open(objectNameValue, "_blank")?.focus();
             break;
         case Operation[Operation.OpenContextMenu]:
-            OpenMenu(JSON.parse(objectNameValue));
+            OpenMenu(JSON.parse(objectNameValue), hashCode => websocket.send(JSON.stringify({ "MenuClicked": hashCode })));
             break;
         case Operation[Operation.OpenURLInPopup]:
         case Operation[Operation.OpenTooltip]:
@@ -102,117 +95,6 @@ function onWebSocketMessageReceived(event) {
         default:
             throw "NotImplemented";
     }
-}
-
-function OpenMenu(menus) {
-    var divMenu = document.createElement("div");
-    divMenu.classList.add("serverview_contextMenu");
-    divMenu.style.position = "absolute";
-    divMenu.style.padding = "5px 0";
-    divMenu.style.border = "1px solid #ccc";
-    divMenu.style.borderRadius = "2px";
-    divMenu.style.background = "#fff";
-    divMenu.style.boxShadow = "2px 2px 4px #ccc";
-    var menuClicked = (hashCode) => {
-        websocket.send(JSON.stringify({ "MenuClicked": hashCode }));
-        enableMouseInteractions();
-        document.querySelectorAll(".serverview_contextMenu").forEach(elem => document.body.removeChild(elem))
-    }
-    menus.forEach((menuItem) => {
-        var subMenuItem;
-        if (menuItem.Header != null) {
-            subMenuItem = document.createElement("div");
-            subMenuItem.dataset.Header = menuItem.Header;
-            subMenuItem.textContent = menuItem.Header.replace("_", "");
-            subMenuItem.style.padding = "5px 10px";
-            subMenuItem.style.color = menuItem.IsEnabled ? "var(--body-font-color)" : "var(--text-disabled-color)";
-            subMenuItem.onclick = () => menuItem.Items.length > 0 ? OpenMenu(menuItem.Items): menuClicked(menuItem.HashCode);
-        } else {
-            subMenuItem = document.createElement("hr"); /* separator */
-            subMenuItem.style.border = "0px";
-            subMenuItem.style.borderTop = "1px solid #ccc";
-            subMenuItem.style.margin = "5px 0";
-        }
-        divMenu.appendChild(subMenuItem);
-    });
-    divMenu.style.opacity = "0";
-    document.body.appendChild(divMenu);
-    divMenu.style.left = mouseX + Math.min(document.body.clientWidth - (mouseX + divMenu.offsetWidth), 0) + "px";
-    divMenu.style.top = mouseY + Math.min(document.body.clientHeight - (mouseY + divMenu.offsetHeight), 0) + "px";
-    disableMouseInteractions();
-    var root_layer = document.getElementById("webview_root_layer") as HTMLElement;
-    if (root_layer != null) {
-        root_layer.addEventListener("mousedown", () => menuClicked(0));
-    }
-    divMenu.style.zIndex = "2147483647";
-    divMenu.style.transition = "opacity .2s";
-    divMenu.style.opacity = "1";
-}
-
-function ResizePopup(windowSettings: object) {
-    var ifrm = window.frameElement as HTMLFrameElement;
-    var titleMinHeight = 36;
-    let isResizable = windowSettings["IsResizable"] as Boolean
-    if (isResizable) { 
-        ifrm.style.height = (windowSettings["Height"] + titleMinHeight) + "px";
-        ifrm.style.resize = "both";
-    } else {
-        ifrm.style.height = windowSettings["Height"] + "px";
-    }
-    ifrm.style.width = windowSettings["Width"] + "px";
-    SetDialogTitle();
-    setTimeout(() => ifrm.style.opacity = "1", 200);
-    function SetDialogTitle() {
-        var title = ifrm.contentDocument!.createElement("div");
-        var frameRoot = ifrm.contentDocument!.getElementById("webview_root");
-        ifrm.contentDocument!.body.insertBefore(title, frameRoot);
-        frameRoot!.style.height = "calc(100% - " + titleMinHeight + "px)";
-        title.textContent = windowSettings["Title"];
-        title.style.background = "var(--body-background-color)";
-        title.style.padding = "10px 15px";
-        title.style.minHeight = titleMinHeight + "px"
-        title.style.color = "var(--aggregator-subeditor-header-text-color)";
-        title.style.fontWeight = "var(--emphasize-font-weight)";
-        title.style.fontSize = "13px";
-        var closeButton = ifrm.contentDocument!.createElement("span");
-        closeButton.textContent = "✕";
-        closeButton.style.position = "absolute";
-        closeButton.style.right = "16px";
-        closeButton.onclick = () => websocket.send(JSON.stringify({ "CloseWindow": true }));
-        title.appendChild(closeButton);
-        title.draggable = true;
-        title.ondragstart = (event: DragEvent) => {
-            ifrm.dataset.xOffset = ((event.screenX - ifrm.offsetLeft) as unknown as string);
-            ifrm.dataset.yOffset = ((event.screenY - ifrm.offsetTop) as unknown as string);
-        };
-        title.ondrag = (event: DragEvent) => {
-            if (event.screenX > 0) {
-                ifrm.style.left = event.screenX - (ifrm.dataset.xOffset as any) + "px";
-                ifrm.style.top = event.screenY - (ifrm.dataset.yOffset as any) + "px";
-            }
-        };
-    }
-}
-
-function OpenURLInPopup(url) {
-    var topDocument = window.top.document;
-    var ifrm = topDocument.createElement("iframe");
-    ifrm.style.position = "fixed";
-    ifrm.style.top = "30px";
-    ifrm.style.left = "50%";
-    ifrm.style.width = "1000px";
-    ifrm.style.transform = "translate(-50%, 0)";
-    ifrm.style.zIndex = "2147483647";
-    ifrm.style.overflow = "auto";
-    ifrm.style.boxShadow = "2px 2px 6px #aaa";
-    ifrm.style.opacity = "0";
-    ifrm.style.transitionProperty = "opacity";
-    ifrm.style.transitionDuration = ".2s";
-    ifrm.frameBorder = "0";
-    ifrm.setAttribute("src", url);
-    ifrm.focus();
-    topDocument.body.appendChild(ifrm);
-
 }
 
 function execute(script, args) {

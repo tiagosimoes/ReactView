@@ -230,28 +230,29 @@ namespace ReactViewControl.WebServer {
             return nativeAPI.ViewRender.Host.GetType().Name;
         }
 
-        private async void SetPopupDimensionsIfNeeded() {
-            if (GetViewName() == "ReactViewHostForPlugins" || GetViewName() == "DialogView") {
-                while (!nativeAPI.ViewRender.IsInitialized) {
-                    await Task.Delay(100);
-                }
-                var windowSettings = ExecuteInUI(() => {
-                    var window = (Window)nativeAPI.ViewRender.Host.Parent;
-                    return new SerializedObject.WindowSettings() {
-                        Height = window.Height,
-                        Width = window.Width,
-                        Title = window.Title,
-                        IsResizable = window.CanResize
-                    };
-                });
-                _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true}));
+        private void SetPopupDimensions(object dimensions = null) {
+            while (!nativeAPI.ViewRender.IsInitialized) {
+                Task.Delay(10);
             }
+            var windowSettings = ExecuteInUI(() => {
+                var window = (Window)nativeAPI.ViewRender.Host.Parent;
+                return new SerializedObject.WindowSettings() {
+                    Height = window.Height,
+                    Width = window.Width,
+                    Title = window.Title,
+                    IsResizable = window.CanResize
+                };
+            });
+
+            _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true }));
         }
 
         internal void SetSocket(WebSocket socket) {
             webSocket = socket;
             _ = ListenForMessages(webSocket);
-            SetPopupDimensionsIfNeeded();
+            if (GetViewName() == "ReactViewHostForPlugins" || GetViewName() == "DialogView") {
+                SetPopupDimensions();
+            }
         }
     }
 }

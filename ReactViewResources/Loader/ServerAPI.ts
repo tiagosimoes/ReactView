@@ -74,12 +74,13 @@ function onWebSocketMessageReceived(event) {
             break;
         case Operation[Operation.Execute]:
             execute(objectNameValue, object.Arguments)
-            if (objectNameValue == "__Modules__(\"\",\"0\",\"Dialog.view\").setInnerView") {
+            if (objectNameValue == "__Modules__(\"\",\"0\",\"LayoutManager\").setAdjustSizeToContent") {
                 setTimeout(() => {
                     var ifrm = window.frameElement as HTMLFrameElement;
-                    ifrm.style.width = (document.body.firstElementChild as HTMLElement)?.offsetWidth + "px";
+                    var root = document.getElementById("webview_root");
+                    ifrm.style.width = root?.offsetWidth + "px";
                     ifrm.style.height = document.body.scrollHeight + "px";
-                }, 200);
+                }, 500); 
             }
             break;
         case Operation[Operation.ResizePopup]:

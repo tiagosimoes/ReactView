@@ -10,10 +10,10 @@ export function OpenMenu(menus, onMenuClick: Function) {
     divMenu.classList.add("serverview_contextMenu");
     divMenu.style.position = "absolute";
     divMenu.style.padding = "5px 0";
-    divMenu.style.border = "1px solid #ccc";
+    divMenu.style.border = "1px solid var(--line-divider-color);";
     divMenu.style.borderRadius = "2px";
-    divMenu.style.background = "#fff";
-    divMenu.style.boxShadow = "2px 2px 4px #ccc";
+    divMenu.style.background = "var(--body-background-color)";
+    divMenu.style.boxShadow = "2px 2px 4px var(--shadow-level-uniform-color1)";
     var menuClicked = (hashCode) => {
         onMenuClick(hashCode);
         enableMouseInteractions();
@@ -31,7 +31,7 @@ export function OpenMenu(menus, onMenuClick: Function) {
         } else {
             subMenuItem = document.createElement("hr"); /* separator */
             subMenuItem.style.border = "0px";
-            subMenuItem.style.borderTop = "1px solid #ccc";
+            subMenuItem.style.borderTop = "1px solid var(--line-divider-color);";
             subMenuItem.style.margin = "5px 0";
         }
         divMenu.appendChild(subMenuItem);

@@ -15,9 +15,9 @@ export function OpenMenu(menus, onMenuClick: Function) {
     divMenu.style.background = "var(--body-background-color)";
     divMenu.style.boxShadow = "2px 2px 4px var(--shadow-level-uniform-color1)";
     var menuClicked = (hashCode) => {
-        onMenuClick(hashCode);
         enableMouseInteractions();
         document.querySelectorAll(".serverview_contextMenu").forEach(elem => document.body.removeChild(elem))
+        onMenuClick(hashCode);
     }
     menus.forEach((menuItem) => {
         var subMenuItem;

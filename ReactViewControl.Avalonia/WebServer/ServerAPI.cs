@@ -28,11 +28,11 @@ namespace ReactViewControl.WebServer {
             MenuClicked
         }
 
-        public static Stream GetCustomResource(string nativeobjectname, string customPath, out string extension) {
-            var nativeObject = nativeobjectname != "" ? ServerViews.FirstOrDefault(conn => conn.NativeAPIName == nativeobjectname) : ServerViews.Last();
+        public static Stream GetCustomResource(string nativeobjectname, string customPath, out string extension, string sessionId) {
+            var nativeObject = ServerViews.FirstOrDefault(conn => conn.NativeAPIName == nativeobjectname);
             return nativeObject.GetCustomResource(customPath, out extension);
         }
-        public static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs, string path) {
+        public static void AddSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs, string path, string sessionId) {
             var serverView = ServerViews.Find(conn => conn.NativeAPIName == path.Substring(1));
             if (serverView != null) {
                 serverView.SetSocket(socket);

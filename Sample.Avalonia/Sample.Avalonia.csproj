@@ -44,7 +44,6 @@
   
   <ItemGroup>
     <ProjectReference Include="..\ReactViewControl.Avalonia\ReactViewControl.Avalonia.csproj" />
-    <ProjectReference Include="..\ReactViewWebServer\ReactViewWebServer.csproj" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

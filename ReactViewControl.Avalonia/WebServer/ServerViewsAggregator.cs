@@ -42,14 +42,14 @@ namespace ReactViewControl.WebServer {
 
         internal static void NewNativeObject(ServerView serverView, ReactViewRender viewRenderer) {
             var aggregatorHashCode = GetAggregatorWindowHashCodeFroControl(viewRenderer);
-            var serverAPI = GetServerViewsAggregatorForWindow(aggregatorHashCode);
-            serverAPI.serverViews.Add(serverView);
+            var serverViewAggregator = GetServerViewsAggregatorForWindow(aggregatorHashCode);
+            serverViewAggregator.serverViews.Add(serverView);
             string url = $"/{ReactViewResources}/index.html?./&true&__Modules__&{serverView.NativeAPIName}&{CustomResourcePath}";
-            if (serverAPI.serverViews.Count == 1) {
-                serverAPI.StarterURL = url;
+            if (serverViewAggregator.serverViews.Count == 1) {
+                serverViewAggregator.StarterURL = url;
             } else {
                 _ = Task.Run(() => {
-                    while (serverAPI.LastConnectionWithActivity() == null) {
+                    while (serverViewAggregator.LastConnectionWithActivity() == null) {
                         Task.Delay(1);
                     }
                     Operation operation;
@@ -68,9 +68,13 @@ namespace ReactViewControl.WebServer {
                             operation = Operation.OpenURL;
                             break;
                     }
-                    _ = serverAPI.LastConnectionWithActivity().SendWebSocketMessage(operation, url);
+                    _ = serverViewAggregator.LastConnectionWithActivity().SendWebSocketMessage(operation, url);
                 });
             }
+        }
+
+        public string LastNativeObjectName() {
+            return LastConnectionWithActivity()?.NativeAPIName;
         }
 
         private ServerView LastConnectionWithActivity() {

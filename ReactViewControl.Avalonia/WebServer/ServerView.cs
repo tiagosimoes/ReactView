@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -23,6 +22,20 @@ namespace ReactViewControl.WebServer {
         readonly Dictionary<string, object> registeredObjects = new Dictionary<string, object>();
         readonly Dictionary<string, CallTargetMethod> registeredObjectInterceptMethods = new Dictionary<string, CallTargetMethod>();
         private CountdownEvent JavascriptPendingCalls { get; } = new CountdownEvent(1);
+        public enum Operation {
+            RegisterObjectName,
+            UnregisterObjectName,
+            EvaluateScriptFunctionWithSerializedParams,
+            Execute,
+            ResizePopup,
+            ReturnValue,
+            OpenURL,
+            OpenURLInPopup,
+            OpenTooltip,
+            OpenContextMenu,
+            CloseWindow,
+            MenuClicked
+        }
 
         public bool RegisterWebJavaScriptObject(string name, object objectToBind, Func<Func<object>, object> interceptCall, bool executeCallsInUI = false) {
             if (registeredObjects.ContainsKey(name)) {
@@ -59,7 +72,7 @@ namespace ReactViewControl.WebServer {
             if (registeredObjects.Count == 1) {
                 nativeAPI = (ReactViewRender.NativeAPI)objectToBind;
                 NativeAPIName = name;
-                ServerAPI.NewNativeObject(this);
+                Task.Run(() => ServerViewsAggregator.NewNativeObject(this, nativeAPI.ViewRender));
             }
             _ = SendWebSocketMessageRegister(name, objectToBind);
             return true;
@@ -67,7 +80,7 @@ namespace ReactViewControl.WebServer {
 
         public void UnregisterWebJavaScriptObject(string name) {
             if (registeredObjects.ContainsKey(name)) {
-                _ = SendWebSocketMessage(ServerAPI.Operation.UnregisterObjectName, name);
+                _ = SendWebSocketMessage(Operation.UnregisterObjectName, name);
                 registeredObjects.Remove(name);
             }
         }
@@ -78,10 +91,10 @@ namespace ReactViewControl.WebServer {
 
         public void ExecuteWebScriptFunctionWithSerializedParams(string functionName, params object[] args) {
             functionName = functionName.Replace("embedded://webview/", "/");
-            _ = SendWebSocketMessage(ServerAPI.Operation.Execute, functionName, JsonSerializer.Serialize(args));
+            _ = SendWebSocketMessage(Operation.Execute, functionName, JsonSerializer.Serialize(args));
         }
         private void ReturnValue(float callKey, object value) {
-            _ = SendWebSocketMessage(ServerAPI.Operation.ReturnValue, callKey.ToString(), JsonSerializer.Serialize(value, new JsonSerializerOptions() { MaxDepth = 512 }));
+            _ = SendWebSocketMessage(Operation.ReturnValue, callKey.ToString(), JsonSerializer.Serialize(value, new JsonSerializerOptions() { MaxDepth = 512 }));
         }
 
         private readonly Dictionary<string, JsonElement> evaluateResults = new Dictionary<string, JsonElement>();
@@ -97,7 +110,7 @@ namespace ReactViewControl.WebServer {
 
         internal void OpenContextMenu(ContextMenu menu) {
             IEnumerable<object> menuItems = GetMenuItems(menu.Items);
-            _ = SendWebSocketMessage(ServerAPI.Operation.OpenContextMenu, JsonSerializer.Serialize(menuItems, new JsonSerializerOptions() { IncludeFields = true }));
+            _ = SendWebSocketMessage(Operation.OpenContextMenu, JsonSerializer.Serialize(menuItems, new JsonSerializerOptions() { IncludeFields = true }));
         }
 
         private static IEnumerable<object> GetMenuItems(System.Collections.IEnumerable items) {
@@ -140,9 +153,9 @@ namespace ReactViewControl.WebServer {
             if (text.StartsWith("{\"EvaluateKey\"")) {
                 var evaluateResult = SerializedObject.DeserializeEvaluateResult(text);
                 evaluateResults[evaluateResult.EvaluateKey] = evaluateResult.EvaluatedResult;
-            } else if (text.StartsWith($"{{\"{ServerAPI.Operation.CloseWindow}\"")) {
+            } else if (text.StartsWith($"{{\"{Operation.CloseWindow}\"")) {
                 CloseWindow();
-            } else if (text.StartsWith($"{{\"{ServerAPI.Operation.MenuClicked}\"")) {
+            } else if (text.StartsWith($"{{\"{Operation.MenuClicked}\"")) {
                 var menuClicked = SerializedObject.DeserializeMenuClicked(text);
                 ClickOnMenuItem(menuClicked);
             } else {
@@ -188,16 +201,16 @@ namespace ReactViewControl.WebServer {
 
         private WebSocket webSocket;
 
-        internal async Task SendWebSocketMessage(ServerAPI.Operation operation, string value, string arguments = "[]") {
+        internal async Task SendWebSocketMessage(Operation operation, string value, string arguments = "[]") {
             await SendWebSocketMessage($"{{ \"{operation}\": \"{JsonEncodedText.Encode(value)}\", \"Arguments\":{arguments} }}");
         }
 
         private async Task SendWebSocketMessageRegister(string name, object objectToBind) {
-            await SendWebSocketMessage($"{{ \"{ServerAPI.Operation.RegisterObjectName}\": \"{name}\", \"Object\": {SerializedObject.SerializeObject(objectToBind)} }}");
+            await SendWebSocketMessage($"{{ \"{Operation.RegisterObjectName}\": \"{name}\", \"Object\": {SerializedObject.SerializeObject(objectToBind)} }}");
         }
 
         private async Task SendWebSocketMessageEvaluate(string method, string evaluateKey, object[] args) {
-            await SendWebSocketMessage($"{{ \"{ServerAPI.Operation.EvaluateScriptFunctionWithSerializedParams}\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}\", \"Arguments\":{JsonSerializer.Serialize(args)} }}");
+            await SendWebSocketMessage($"{{ \"{Operation.EvaluateScriptFunctionWithSerializedParams}\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}\", \"Arguments\":{JsonSerializer.Serialize(args)} }}");
         }
 
         private async Task SendWebSocketMessage(string message) {
@@ -220,7 +233,7 @@ namespace ReactViewControl.WebServer {
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            ServerAPI.CloseSocket(this);
+            ServerViewsAggregator.CloseSocket(this);
         }
 
         internal string GetViewName() {
@@ -244,7 +257,7 @@ namespace ReactViewControl.WebServer {
                 };
             });
 
-            _ = SendWebSocketMessage(ServerAPI.Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true }));
+            _ = SendWebSocketMessage(Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true }));
         }
 
         internal void SetSocket(WebSocket socket) {

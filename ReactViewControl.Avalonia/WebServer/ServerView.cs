@@ -200,6 +200,7 @@ namespace ReactViewControl.WebServer {
         }
 
         private WebSocket webSocket;
+        private TaskCompletionSource<object> socketFinished;
 
         internal async Task SendWebSocketMessage(Operation operation, string value, string arguments = "[]") {
             await SendWebSocketMessage($"{{ \"{operation}\": \"{JsonEncodedText.Encode(value)}\", \"Arguments\":{arguments} }}");
@@ -234,6 +235,7 @@ namespace ReactViewControl.WebServer {
             }
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
             ServerViewsAggregator.CloseSocket(this);
+            socketFinished.SetResult(0);
         }
 
         internal string GetViewName() {
@@ -243,7 +245,7 @@ namespace ReactViewControl.WebServer {
             return nativeAPI.ViewRender.Host.GetType().Name;
         }
 
-        private void SetPopupDimensions(object dimensions = null) {
+        private void SetPopupDimensions() {
             while (!nativeAPI.ViewRender.IsInitialized) {
                 Task.Delay(10);
             }
@@ -260,8 +262,9 @@ namespace ReactViewControl.WebServer {
             _ = SendWebSocketMessage(Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true }));
         }
 
-        internal void SetSocket(WebSocket socket) {
+        internal void SetSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs) {
             webSocket = socket;
+            socketFinished = socketFinishedTcs;
             _ = ListenForMessages(webSocket);
             if (GetViewName() == "ReactViewHostForPlugins" || GetViewName() == "DialogView") {
                 SetPopupDimensions();

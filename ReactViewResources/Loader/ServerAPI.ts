@@ -118,7 +118,10 @@ function registerObject(registerObjectName: string, object: any) {
         if (method["ReturnType"].ClassName != "System.Void") {
             windowObject[lowerFirstLetter(methodName)] = async function (...theArgs) {
                 if (methodName == "GetBaseUrl" && registerObjectName.endsWith("UIEditorView")) {
-                    return "/"; // TODO TCS, fix the loading of UI Editor resources in a better way
+                    return "/" + nativeAPIObjectName + "/"; // This is needed for UI Editor
+                }
+                if (methodName == "GetStylesInfo" && registerObjectName.endsWith("StylesEditorView")) {
+                    return null; // TODO TCS Fix wiget styles editor properly (without this the socket seems to eter in a deadlock or something)
                 }
                 var methodCall = { ObjectName: registerObjectName, MethodName: methodName, Args: theArgs, CallKey: Math.round(Math.random() * 1000000) };
                 websocket.send(JSON.stringify(methodCall));

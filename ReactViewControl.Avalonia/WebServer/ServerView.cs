@@ -12,9 +12,12 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 
 namespace ReactViewControl.WebServer {
-    class ServerView {
+    public class ServerView {
 
         delegate object CallTargetMethod(Func<object> target);
+        public static Action<ServerView> NewNativeObject { get; set; }
+        public static Action<ServerView> CloseSocket { get; set; }
+
 
         private ReactViewRender.NativeAPI nativeAPI;
         public string NativeAPIName;
@@ -72,10 +75,19 @@ namespace ReactViewControl.WebServer {
             if (registeredObjects.Count == 1) {
                 nativeAPI = (ReactViewRender.NativeAPI)objectToBind;
                 NativeAPIName = name;
-                Task.Run(() => ServerViewsAggregator.NewNativeObject(this, nativeAPI.ViewRender));
+                NewNativeObject(this);
             }
             _ = SendWebSocketMessageRegister(name, objectToBind);
             return true;
+        }
+
+        public ReactView Host {
+            get {
+                while (nativeAPI.ViewRender.Host == null) {
+                    Task.Delay(10);
+                }
+                return nativeAPI.ViewRender.Host;
+            }
         }
 
         public void UnregisterWebJavaScriptObject(string name) {
@@ -85,7 +97,7 @@ namespace ReactViewControl.WebServer {
             }
         }
 
-        internal bool IsSocketOpen() {
+        public bool IsSocketOpen() {
             return webSocket != null && webSocket.State == WebSocketState.Open;
         }
 
@@ -145,8 +157,29 @@ namespace ReactViewControl.WebServer {
             return Dispatcher.UIThread.CheckAccess() ? action() : Dispatcher.UIThread.InvokeAsync(action).Result;
         }
 
-        internal Stream GetCustomResource(string path, out string extension) {
+        public Stream GetCustomResource(string path, out string extension) {
             return nativeAPI.ViewRender.GetCustomResource(path, out extension);
+        }
+
+        public void OpenURL(string url, bool inPopup = false) {
+            _ = SendWebSocketMessage(inPopup? Operation.OpenURLInPopup: Operation.OpenURL, url);
+        }
+
+        public void SetPopupDimensions() {
+            while (!nativeAPI.ViewRender.IsInitialized) {
+                Task.Delay(10);
+            }
+            var windowSettings = ExecuteInUI(() => {
+                var window = (Window)nativeAPI.ViewRender.Host.Parent;
+                return new SerializedObject.WindowSettings() {
+                    Height = window.Height,
+                    Width = window.Width,
+                    Title = window.Title,
+                    IsResizable = window.CanResize
+                };
+            });
+
+            _ = SendWebSocketMessage(Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true }));
         }
 
         private void ReceiveMessage(string text) {
@@ -234,41 +267,14 @@ namespace ReactViewControl.WebServer {
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            ServerViewsAggregator.CloseSocket(this);
+            CloseSocket(this);
             socketFinished.SetResult(0);
         }
 
-        internal string GetViewName() {
-            while (nativeAPI.ViewRender.Host == null) {
-                Task.Delay(10);
-            }
-            return nativeAPI.ViewRender.Host.GetType().Name;
-        }
-
-        private void SetPopupDimensions() {
-            while (!nativeAPI.ViewRender.IsInitialized) {
-                Task.Delay(10);
-            }
-            var windowSettings = ExecuteInUI(() => {
-                var window = (Window)nativeAPI.ViewRender.Host.Parent;
-                return new SerializedObject.WindowSettings() {
-                    Height = window.Height,
-                    Width = window.Width,
-                    Title = window.Title,
-                    IsResizable = window.CanResize
-                };
-            });
-
-            _ = SendWebSocketMessage(Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true }));
-        }
-
-        internal void SetSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs) {
+        public void SetSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs) {
             webSocket = socket;
             socketFinished = socketFinishedTcs;
             _ = ListenForMessages(webSocket);
-            if (GetViewName() == "ReactViewHostForPlugins" || GetViewName() == "DialogView") {
-                SetPopupDimensions();
-            }
         }
     }
 }

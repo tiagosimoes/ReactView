@@ -2,7 +2,7 @@
 import { libsPath, mainFrameName, webViewRootId } from "./Internal/Environment";
 import { loadScript } from "./Internal/ResourcesLoader";
 import { newView, ViewMetadata } from "./Internal/ViewMetadata";
-import { setWebSocketsConnection } from "./ServerAPI";
+import { setWebSocketsConnection } from "./ServerViewAPI";
 
 declare function define(name: string, dependencies: string[], definition: Function);
 

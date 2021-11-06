@@ -1,6 +1,6 @@
 ﻿import { nativeAPIObjectName } from "./Internal/Environment";
-import { OpenURLInPopup, ResizePopup } from "./Internal/ServerAPIPopups";
-import { OpenMenu } from "./Internal/ServerAPIMenus";
+import { OpenURLInPopup, ResizePopup } from "./Internal/ServerViewAPIPopups";
+import { OpenMenu } from "./Internal/ServerViewAPIMenus";
 
 
 var returnValues = new Object();

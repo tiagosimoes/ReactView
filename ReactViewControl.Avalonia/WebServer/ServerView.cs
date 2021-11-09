@@ -165,15 +165,12 @@ namespace ReactViewControl.WebServer {
             _ = SendWebSocketMessage(inPopup? Operation.OpenURLInPopup: Operation.OpenURL, url);
         }
 
-        public void SetPopupDimensions() {
-            while (!nativeAPI.ViewRender.IsInitialized) {
-                Task.Delay(10);
-            }
+        private void SetPopupDimensions() {
             var windowSettings = ExecuteInUI(() => {
                 var window = (Window)nativeAPI.ViewRender.Host.Parent;
                 return new SerializedObject.WindowSettings() {
-                    Height = window.Height,
-                    Width = window.Width,
+                    Height = double.IsNaN(window.Height)? 2000: window.Height,
+                    Width = double.IsNaN(window.Width) ? 2000: window.Width,
                     Title = window.Title,
                     IsResizable = window.CanResize
                 };
@@ -204,6 +201,13 @@ namespace ReactViewControl.WebServer {
                 var result = SerializedObject.ExecuteMethod(obj, methodCall);
                 if (obj.GetType().GetMethod(methodCall.MethodName).ReturnType != typeof(void)) {
                     ReturnValue(methodCall.CallKey, result);
+                }
+                if (methodCall.MethodName == "NotifyViewLoaded" && nativeAPI.ViewRender.Host.Parent is Window) {
+                    // dialogs are oppened in iframes and need to be redimensioned
+                    if (methodCall.Args is JsonElement args &&
+                        args.EnumerateArray().First().GetString() != "") {
+                            Dispatcher.UIThread.InvokeAsync(() => SetPopupDimensions());
+                    }
                 }
                 return result;
             });

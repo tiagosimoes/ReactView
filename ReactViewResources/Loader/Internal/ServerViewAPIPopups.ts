@@ -2,14 +2,18 @@
 export function ResizePopup(windowSettings: object, onClose: Function = () => null ) {
     var ifrm = window.frameElement as HTMLFrameElement;
     var frameRoot = ifrm.contentDocument!.getElementById("webview_root");
+    var alreadyHasTitle = (ifrm.contentDocument!.body.childElementCount > 1);
+    var titleMinHeight = 36;
     if (frameRoot?.classList.contains("fit-content-width")) {
         windowSettings["Width"] = frameRoot?.scrollWidth;
     }
     if (frameRoot?.classList.contains("fit-content-height")) {
-        windowSettings["Height"] = document.body.scrollHeight + 36 ;
+        // need these next 2 lines because guided tutorial needs resizing between steps
+        ifrm.style.height = "2000px";
+        frameRoot.style.height = "auto";
+        windowSettings["Height"] = frameRoot.scrollHeight + titleMinHeight;
+        frameRoot.style.height = "calc(100% - " + titleMinHeight + "px)";
     }
-
-    var titleMinHeight = 36;
     let isResizable = windowSettings["IsResizable"] as Boolean
     if (isResizable) {
         ifrm.style.height = (windowSettings["Height"] + titleMinHeight) + "px";
@@ -18,7 +22,9 @@ export function ResizePopup(windowSettings: object, onClose: Function = () => nu
         ifrm.style.height = windowSettings["Height"] + "px";
     }
     ifrm.style.width = windowSettings["Width"] + "px";
-    SetDialogTitle();
+    if (!alreadyHasTitle) {
+        SetDialogTitle();
+    }
     setTimeout(() => ifrm.style.opacity = "1", 200);
     function SetDialogTitle() {
         var title = ifrm.contentDocument!.createElement("div");

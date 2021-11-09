@@ -25,7 +25,8 @@ export function ResizePopup(windowSettings: object, onClose: Function = () => nu
     if (!alreadyHasTitle) {
         SetDialogTitle();
     }
-    setTimeout(() => ifrm.style.opacity = "1", 200);
+    ifrm.style.opacity = "1";
+    window.top.document.body.style.cursor = "";
     function SetDialogTitle() {
         var title = ifrm.contentDocument!.createElement("div");
         ifrm.contentDocument!.body.insertBefore(title, frameRoot);
@@ -71,10 +72,10 @@ export function OpenURLInPopup(url) {
     ifrm.style.boxShadow = "2px 2px 6px var(--shadow-level-uniform-color1)";
     ifrm.style.opacity = "0";
     ifrm.style.transitionProperty = "opacity";
-    ifrm.style.transitionDuration = ".2s";
+    ifrm.style.transitionDuration = ".1s";
     ifrm.frameBorder = "0";
     ifrm.setAttribute("src", url);
     ifrm.focus();
     topDocument.body.appendChild(ifrm);
-
+    topDocument.body.style.cursor = "progress";
 }

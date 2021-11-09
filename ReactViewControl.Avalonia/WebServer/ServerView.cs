@@ -257,12 +257,13 @@ namespace ReactViewControl.WebServer {
             }
         }
 
-        private async Task ListenForMessages(WebSocket webSocket) {
+        private async Task ListenForMessages(WebSocket webSocket, Action onBeforeMessage) {
             var buffer = new byte[1024 * 1024];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             while (!result.CloseStatus.HasValue) {
                 var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
                 LastActivity = DateTime.Now;
+                onBeforeMessage();
                 ReceiveMessage(text);
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
@@ -271,10 +272,10 @@ namespace ReactViewControl.WebServer {
             socketFinished.SetResult(0);
         }
 
-        public void SetSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs) {
+        public void SetSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs, Action onBeforeMessage) {
             webSocket = socket;
             socketFinished = socketFinishedTcs;
-            _ = ListenForMessages(webSocket);
+            _ = ListenForMessages(webSocket, onBeforeMessage);
         }
     }
 }

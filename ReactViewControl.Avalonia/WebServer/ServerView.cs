@@ -208,9 +208,9 @@ namespace ReactViewControl.WebServer {
                     ReturnValue(methodCall.CallKey, result);
                 }
                 if (methodCall.MethodName == "NotifyViewLoaded" && nativeAPI.ViewRender.Host.Parent is Window) {
-                    // dialogs are oppened in iframes and need to be redimensioned
-                    if (methodCall.Args is JsonElement args &&
-                        args.EnumerateArray().First().GetString() != "") {
+                    // dialogs are opened in iframes and need to be redimensioned
+                    if ((methodCall.Args is JsonElement args && args.EnumerateArray().First().GetString() != "") || 
+                            nativeAPI.ViewRender.Host.GetType().ToString().EndsWith("ReactViewHostForPlugins")) {
                         Dispatcher.UIThread.InvokeAsync(() => SetPopupDimensions());
                     }
                 }

@@ -69,7 +69,7 @@ export function OpenURLInPopup(url) {
     ifrm.style.transform = "translate(-50%, 0)";
     ifrm.style.zIndex = "2147483647";
     ifrm.style.overflow = "auto";
-    ifrm.style.boxShadow = "2px 2px 6px var(--shadow-level-uniform-color1)";
+    ifrm.style.boxShadow = "1px 1px 10px var(--shadow-level-uniform-color1)";
     ifrm.style.opacity = "0";
     ifrm.style.transitionProperty = "opacity";
     ifrm.style.transitionDuration = ".1s";

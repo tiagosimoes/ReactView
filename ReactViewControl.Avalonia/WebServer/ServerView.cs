@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using static ReactViewControl.WebServer.SerializedObject;
 
 namespace ReactViewControl.WebServer {
     public class ServerView {
@@ -114,8 +115,12 @@ namespace ReactViewControl.WebServer {
         internal Task<T> EvaluateScriptFunctionWithSerializedParams<T>(string method, object[] args) {
             var evaluateKey = Guid.NewGuid().ToString();
             _ = SendWebSocketMessageEvaluate(method, evaluateKey, args);
+            var startTime = DateTime.Now;
             while (!evaluateResults.ContainsKey(evaluateKey)) {
                 Task.Delay(50);
+                if (DateTime.Now.Subtract(startTime).TotalSeconds > 30) {
+                    throw new Exception(method + " took more than 30s");
+                }
             }
             return Task.FromResult(JsonSerializer.Deserialize<T>((evaluateResults[evaluateKey]).GetRawText()));
         }
@@ -168,7 +173,7 @@ namespace ReactViewControl.WebServer {
         private void SetPopupDimensions() {
             var windowSettings = ExecuteInUI(() => {
                 var window = (Window)nativeAPI.ViewRender.Host.Parent;
-                return new SerializedObject.WindowSettings() {
+                return new WindowSettings() {
                     Height = double.IsNaN(window.Height)? 2000: window.Height,
                     Width = double.IsNaN(window.Width) ? 2000: window.Width,
                     Title = window.Title,
@@ -181,24 +186,24 @@ namespace ReactViewControl.WebServer {
 
         private void ReceiveMessage(string text) {
             if (text.StartsWith("{\"EvaluateKey\"")) {
-                var evaluateResult = SerializedObject.DeserializeEvaluateResult(text);
+                var evaluateResult = DeserializeEvaluateResult(text);
                 evaluateResults[evaluateResult.EvaluateKey] = evaluateResult.EvaluatedResult;
             } else if (text.StartsWith($"{{\"{Operation.CloseWindow}\"")) {
                 CloseWindow();
             } else if (text.StartsWith($"{{\"{Operation.MenuClicked}\"")) {
-                var menuClicked = SerializedObject.DeserializeMenuClicked(text);
+                var menuClicked = DeserializeMenuClicked(text);
                 ClickOnMenuItem(menuClicked);
             } else {
-                var methodCall = SerializedObject.DeserializeMethodCall(text);
+                var methodCall = DeserializeMethodCall(text);
                 ExecuteMethod(methodCall);
             }
         }
 
-        private void ExecuteMethod(SerializedObject.MethodCall methodCall) {
+        private void ExecuteMethod(MethodCall methodCall) {
             var obj = registeredObjects[methodCall.ObjectName];
             var callTargetMethod = registeredObjectInterceptMethods[methodCall.ObjectName];
             callTargetMethod(() => {
-                var result = SerializedObject.ExecuteMethod(obj, methodCall);
+                var result = ExecuteMethod(obj, methodCall);
                 if (obj.GetType().GetMethod(methodCall.MethodName).ReturnType != typeof(void)) {
                     ReturnValue(methodCall.CallKey, result);
                 }
@@ -206,12 +211,65 @@ namespace ReactViewControl.WebServer {
                     // dialogs are oppened in iframes and need to be redimensioned
                     if (methodCall.Args is JsonElement args &&
                         args.EnumerateArray().First().GetString() != "") {
-                            Dispatcher.UIThread.InvokeAsync(() => SetPopupDimensions());
+                        Dispatcher.UIThread.InvokeAsync(() => SetPopupDimensions());
                     }
                 }
                 return result;
             });
         }
+
+        internal static object ExecuteMethod(object obj, MethodCall methodCall) {
+            var method = obj.GetType().GetMethod(methodCall.MethodName);
+            List<object> arguments = new List<object>();
+            if (methodCall.Args is JsonElement elem) {
+                if (method.GetParameters().Length > 0) {
+                    foreach (var item in elem.EnumerateArray().Select((value, index) => new { index, value })) {
+                        var parameter = method.GetParameters()[item.index];
+                        if (item.value.ValueKind == JsonValueKind.Array && !parameter.ParameterType.IsArray) {
+                            foreach (var subitem in item.value.EnumerateArray().Select((value, index) => new { index, value })) {
+                                var subparameter = method.GetParameters()[subitem.index];
+                                arguments.Add(GetJSONValue(subitem.value, subparameter.ParameterType));
+                            }
+                            break;
+                        } else {
+                            arguments.Add(GetJSONValue(item.value, parameter.ParameterType));
+                        }
+                    }
+                }
+            }
+            if (method.ReturnType == typeof(void)) {
+                AsyncExecuteIfNeeded(() => 
+                    obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray())
+                );
+                return null;
+            } else {
+                return obj.GetType().GetMethod(methodCall.MethodName).Invoke(obj, arguments.ToArray());
+            }
+        }
+
+        private static object GetJSONValue(JsonElement elem, Type type) {
+            switch (elem.ValueKind) {
+                case JsonValueKind.Null:
+                    return null;
+                case JsonValueKind.False:
+                    return false;
+                case JsonValueKind.True:
+                    return true;
+                default:
+                    return JsonSerializer.Deserialize(elem.GetRawText(), type);
+            };
+            throw new NotImplementedException();
+        }
+
+
+        private static void AsyncExecuteIfNeeded(Action action) {
+            if (Dispatcher.UIThread.CheckAccess()) {
+                action();
+            } else {
+                Task.Run(action);
+            }
+        }
+
 
         private void CloseWindow() {
             Dispatcher.UIThread.InvokeAsync(() => {
@@ -220,7 +278,7 @@ namespace ReactViewControl.WebServer {
             });
         }
 
-        private void ClickOnMenuItem(SerializedObject.MenuClickedObject menuClicked) {
+        private void ClickOnMenuItem(MenuClickedObject menuClicked) {
             Dispatcher.UIThread.InvokeAsync(() => {
                 IEnumerable<MenuItem> GetAllSubMenuItems(MenuItem menuItem) {
                     return new[] { menuItem }.Concat(
@@ -244,7 +302,7 @@ namespace ReactViewControl.WebServer {
         }
 
         private async Task SendWebSocketMessageRegister(string name, object objectToBind) {
-            await SendWebSocketMessage($"{{ \"{Operation.RegisterObjectName}\": \"{name}\", \"Object\": {SerializedObject.SerializeObject(objectToBind)} }}");
+            await SendWebSocketMessage($"{{ \"{Operation.RegisterObjectName}\": \"{name}\", \"Object\": {SerializeObject(objectToBind)} }}");
         }
 
         private async Task SendWebSocketMessageEvaluate(string method, string evaluateKey, object[] args) {
@@ -268,7 +326,12 @@ namespace ReactViewControl.WebServer {
                 var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
                 LastActivity = DateTime.Now;
                 onBeforeMessage();
-                ReceiveMessage(text);
+                try {
+                    ReceiveMessage(text);
+                } catch (Exception e) {
+                    // Let's just log the error to enable the socket to continue receiving messages
+                    System.Diagnostics.Trace.TraceError(e.ToString());
+                }
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
             await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);

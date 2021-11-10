@@ -4,7 +4,7 @@ import { OpenMenu } from "./Internal/ServerViewAPIMenus";
 
 
 var returnValues = new Object();
-var websocket;
+var websocket: WebSocket;
 
 export async function setWebSocketsConnection() {
     var base = document.createElement('base');
@@ -124,16 +124,24 @@ function registerObject(registerObjectName: string, object: any) {
                     return null; // TODO TCS Fix wiget styles editor properly (without this the socket seems to eter in a deadlock or something)
                 }
                 var methodCall = { ObjectName: registerObjectName, MethodName: methodName, Args: theArgs, CallKey: Math.round(Math.random() * 1000000) };
+                reloadIfClosedSocket();
                 websocket.send(JSON.stringify(methodCall));
                 return await getReturnValue(methodCall.CallKey, methodCall);
             }
         } else {
             windowObject[lowerFirstLetter(methodName)] = function (...theArgs) {
                 var methodCall = { ObjectName: registerObjectName, MethodName: methodName, Args: theArgs };
+                reloadIfClosedSocket();
                 websocket.send(JSON.stringify(methodCall));
             }
         }
     });
+}
+
+function reloadIfClosedSocket() {
+    if (websocket.readyState == WebSocket.CLOSED) {
+        location.reload();
+    }
 }
 
 async function getReturnValue(callKey: number, methodCall: object): Promise<object> {

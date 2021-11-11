@@ -330,6 +330,7 @@ namespace ReactViewControl.WebServer {
                     ReceiveMessage(text);
                 } catch (Exception e) {
                     // Let's just log the error to enable the socket to continue receiving messages
+                    // TODO TCS, log this in a better way
                     System.Diagnostics.Trace.TraceError(e.ToString());
                 }
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);

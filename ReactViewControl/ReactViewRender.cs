@@ -52,6 +52,7 @@ namespace ReactViewControl {
             PluginsFactory = initializePlugins;
             GetOrCreateFrame(FrameInfo.MainViewFrameName); // creates the main frame
 
+            EditCommands = new EditCommands();
         }
 
         partial void ExtraInitialize();

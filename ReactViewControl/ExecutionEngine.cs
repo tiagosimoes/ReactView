@@ -33,7 +33,9 @@ namespace ReactViewControl {
         public T EvaluateMethod<T>(IViewModule module, string methodCall, params object[] args) => EvaluateMethodAsync<T>(module, methodCall, args).Result;
 
         public Task<T> EvaluateMethodAsync<T>(IViewModule module, string methodCall, params object[] args) {
-            if (serverView == null) {
+            if (serverView == null || module.Name == "UIEditor.view") {
+                // Disable all UIEditor evaluations as they can give deadlocks
+                // TODO TCS need to review this later
                 return Task.FromResult<T>(default);
             }
             module.Host?.HandledBeforeExecuteMethod();

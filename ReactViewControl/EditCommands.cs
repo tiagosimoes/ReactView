@@ -6,22 +6,21 @@ namespace ReactViewControl {
 
         private WebView WebView { get; }
 
-        internal EditCommands(WebView webView) {
-            WebView = webView;
+        internal EditCommands() {
         }
 
-        public void Cut() => WebView.EditCommands.Cut();
+        public void Cut() { }
 
-        public void Copy() => WebView.EditCommands.Copy();
+        public void Copy() { }
 
-        public void Paste() => WebView.EditCommands.Paste();
+        public void Paste() { }
 
-        public void SelectAll() => WebView.EditCommands.SelectAll();
+        public void SelectAll() { }
 
-        public void Undo() => WebView.EditCommands.Undo();
+        public void Undo() { }
 
-        public void Redo() => WebView.EditCommands.Redo();
+        public void Redo() { }
 
-        public void Delete() => WebView.EditCommands.Delete();
+        public void Delete() { }
     }
 }

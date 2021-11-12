@@ -17,7 +17,7 @@ namespace ReactViewControl.WebServer {
 
         delegate object CallTargetMethod(Func<object> target);
         public static Action<ServerView, string> NewNativeObject { get; set; }
-        public static Action<ServerView, string> SendMessage { get; set; }
+        public static Action<string, string> SendMessage { get; set; }
 
 
         private ReactViewRender.NativeAPI nativeAPI;
@@ -289,15 +289,15 @@ namespace ReactViewControl.WebServer {
         }
 
         void SendWebSocketMessage(Operation operation, string value, string arguments = "[]") {
-            SendMessage(this, $"{{ \"{operation}\": \"{JsonEncodedText.Encode(value)}\", \"Arguments\":{arguments} }}");
+            SendMessage(nativeAPI.nativeObjectName, $"{{ \"{operation}\": \"{JsonEncodedText.Encode(value)}\", \"Arguments\":{arguments} }}");
         }
 
         void SendWebSocketMessageRegister(string name, object objectToBind) {
-            SendMessage(this, $"{{ \"{Operation.RegisterObjectName}\": \"{name}\", \"Object\": {SerializeObject(objectToBind)} }}");
+            SendMessage(nativeAPI.nativeObjectName, $"{{ \"{Operation.RegisterObjectName}\": \"{name}\", \"Object\": {SerializeObject(objectToBind)} }}");
         }
 
         void SendWebSocketMessageEvaluate(string method, string evaluateKey, object[] args) {
-            SendMessage(this, $"{{ \"{Operation.EvaluateScriptFunctionWithSerializedParams}\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}\", \"Arguments\":{JsonSerializer.Serialize(args)} }}");
+            SendMessage(nativeAPI.nativeObjectName, $"{{ \"{Operation.EvaluateScriptFunctionWithSerializedParams}\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}\", \"Arguments\":{JsonSerializer.Serialize(args)} }}");
         }
     }
 }

@@ -11,7 +11,7 @@ namespace ReactViewControl {
         /// </summary>
         public class NativeAPI {
 
-            private string nativeObjectName = "__NativeAPI__";
+            internal string nativeObjectName = "__NativeAPI__";
 
             public ReactViewRender ViewRender { get; }
 

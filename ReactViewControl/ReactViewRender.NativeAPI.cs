@@ -17,7 +17,7 @@ namespace ReactViewControl {
 
             private NativeAPI(ReactViewRender viewRender) {
                 ViewRender = viewRender;
-                nativeObjectName += GetHashCode();
+                nativeObjectName += Guid.NewGuid();
                 viewRender.ServerView.RegisterWebJavaScriptObject(nativeObjectName, this, null, false);
             }
 

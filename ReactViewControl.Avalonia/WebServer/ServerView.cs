@@ -16,17 +16,16 @@ namespace ReactViewControl.WebServer {
     public class ServerView {
 
         delegate object CallTargetMethod(Func<object> target);
-        public static Action<ServerView> NewNativeObject { get; set; }
-        public static Action<ServerView> CloseSocket { get; set; }
+        public static Action<ServerView, string> NewNativeObject { get; set; }
+        public static Action<ServerView, string> SendMessage { get; set; }
 
 
         private ReactViewRender.NativeAPI nativeAPI;
-        public string NativeAPIName;
-        public DateTime LastActivity;
         readonly Dictionary<string, object> registeredObjects = new Dictionary<string, object>();
         readonly Dictionary<string, CallTargetMethod> registeredObjectInterceptMethods = new Dictionary<string, CallTargetMethod>();
         private CountdownEvent JavascriptPendingCalls { get; } = new CountdownEvent(1);
-        public enum Operation {
+        
+        enum Operation {
             RegisterObjectName,
             UnregisterObjectName,
             EvaluateScriptFunctionWithSerializedParams,
@@ -75,10 +74,9 @@ namespace ReactViewControl.WebServer {
             registeredObjectInterceptMethods[name] = CallTargetMethod;
             if (registeredObjects.Count == 1) {
                 nativeAPI = (ReactViewRender.NativeAPI)objectToBind;
-                NativeAPIName = name;
-                NewNativeObject(this);
+                NewNativeObject(this, name);
             }
-            _ = SendWebSocketMessageRegister(name, objectToBind);
+            SendWebSocketMessageRegister(name, objectToBind);
             return true;
         }
 
@@ -93,28 +91,24 @@ namespace ReactViewControl.WebServer {
 
         public void UnregisterWebJavaScriptObject(string name) {
             if (registeredObjects.ContainsKey(name)) {
-                _ = SendWebSocketMessage(Operation.UnregisterObjectName, name);
+                SendWebSocketMessage(Operation.UnregisterObjectName, name);
                 registeredObjects.Remove(name);
             }
         }
 
-        public bool IsSocketOpen() {
-            return webSocket != null && webSocket.State == WebSocketState.Open;
-        }
-
         public void ExecuteWebScriptFunctionWithSerializedParams(string functionName, params object[] args) {
             functionName = functionName.Replace("embedded://webview/", "/");
-            _ = SendWebSocketMessage(Operation.Execute, functionName, JsonSerializer.Serialize(args));
+            SendWebSocketMessage(Operation.Execute, functionName, JsonSerializer.Serialize(args));
         }
         private void ReturnValue(float callKey, object value) {
-            _ = SendWebSocketMessage(Operation.ReturnValue, callKey.ToString(), JsonSerializer.Serialize(value, new JsonSerializerOptions() { MaxDepth = 512 }));
+            SendWebSocketMessage(Operation.ReturnValue, callKey.ToString(), JsonSerializer.Serialize(value, new JsonSerializerOptions() { MaxDepth = 512 }));
         }
 
         private readonly Dictionary<string, JsonElement> evaluateResults = new Dictionary<string, JsonElement>();
 
         internal Task<T> EvaluateScriptFunctionWithSerializedParams<T>(string method, object[] args) {
             var evaluateKey = Guid.NewGuid().ToString();
-            _ = SendWebSocketMessageEvaluate(method, evaluateKey, args);
+            SendWebSocketMessageEvaluate(method, evaluateKey, args);
             var startTime = DateTime.Now;
             while (!evaluateResults.ContainsKey(evaluateKey)) {
                 Task.Delay(50);
@@ -127,7 +121,7 @@ namespace ReactViewControl.WebServer {
 
         internal void OpenContextMenu(ContextMenu menu) {
             IEnumerable<object> menuItems = GetMenuItems(menu.Items);
-            _ = SendWebSocketMessage(Operation.OpenContextMenu, JsonSerializer.Serialize(menuItems, new JsonSerializerOptions() { IncludeFields = true }));
+            SendWebSocketMessage(Operation.OpenContextMenu, JsonSerializer.Serialize(menuItems, new JsonSerializerOptions() { IncludeFields = true }));
         }
 
         private static IEnumerable<object> GetMenuItems(System.Collections.IEnumerable items) {
@@ -167,7 +161,7 @@ namespace ReactViewControl.WebServer {
         }
 
         public void OpenURL(string url, bool inPopup = false) {
-            _ = SendWebSocketMessage(inPopup? Operation.OpenURLInPopup: Operation.OpenURL, url);
+            SendWebSocketMessage(inPopup? Operation.OpenURLInPopup: Operation.OpenURL, url);
         }
 
         private void SetPopupDimensions() {
@@ -181,10 +175,10 @@ namespace ReactViewControl.WebServer {
                 };
             });
 
-            _ = SendWebSocketMessage(Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true }));
+            SendWebSocketMessage(Operation.ResizePopup, JsonSerializer.Serialize(windowSettings, new JsonSerializerOptions() { IncludeFields = true }));
         }
 
-        private void ReceiveMessage(string text) {
+        public void ReceiveMessage(string text) {
             if (text.StartsWith("{\"EvaluateKey\"")) {
                 var evaluateResult = DeserializeEvaluateResult(text);
                 evaluateResults[evaluateResult.EvaluateKey] = evaluateResult.EvaluatedResult;
@@ -294,56 +288,16 @@ namespace ReactViewControl.WebServer {
             });
         }
 
-        private WebSocket webSocket;
-        private TaskCompletionSource<object> socketFinished;
-
-        internal async Task SendWebSocketMessage(Operation operation, string value, string arguments = "[]") {
-            await SendWebSocketMessage($"{{ \"{operation}\": \"{JsonEncodedText.Encode(value)}\", \"Arguments\":{arguments} }}");
+        void SendWebSocketMessage(Operation operation, string value, string arguments = "[]") {
+            SendMessage(this, $"{{ \"{operation}\": \"{JsonEncodedText.Encode(value)}\", \"Arguments\":{arguments} }}");
         }
 
-        private async Task SendWebSocketMessageRegister(string name, object objectToBind) {
-            await SendWebSocketMessage($"{{ \"{Operation.RegisterObjectName}\": \"{name}\", \"Object\": {SerializeObject(objectToBind)} }}");
+        void SendWebSocketMessageRegister(string name, object objectToBind) {
+            SendMessage(this, $"{{ \"{Operation.RegisterObjectName}\": \"{name}\", \"Object\": {SerializeObject(objectToBind)} }}");
         }
 
-        private async Task SendWebSocketMessageEvaluate(string method, string evaluateKey, object[] args) {
-            await SendWebSocketMessage($"{{ \"{Operation.EvaluateScriptFunctionWithSerializedParams}\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}\", \"Arguments\":{JsonSerializer.Serialize(args)} }}");
-        }
-
-        private async Task SendWebSocketMessage(string message) {
-            var stream = Encoding.UTF8.GetBytes(message);
-            while (webSocket == null) {
-                await Task.Delay(10);
-            }
-            if (IsSocketOpen()) {
-                await webSocket.SendAsync(new ArraySegment<byte>(stream), WebSocketMessageType.Text, true, CancellationToken.None);
-            }
-        }
-
-        private async Task ListenForMessages(WebSocket webSocket, Action onBeforeMessage) {
-            var buffer = new byte[1024 * 1024];
-            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            while (!result.CloseStatus.HasValue) {
-                var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                LastActivity = DateTime.Now;
-                onBeforeMessage();
-                try {
-                    ReceiveMessage(text);
-                } catch (Exception e) {
-                    // Let's just log the error to enable the socket to continue receiving messages
-                    // TODO TCS, log this in a better way
-                    System.Diagnostics.Trace.TraceError(e.ToString());
-                }
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            }
-            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            CloseSocket(this);
-            socketFinished.SetResult(0);
-        }
-
-        public void SetSocket(WebSocket socket, TaskCompletionSource<object> socketFinishedTcs, Action onBeforeMessage) {
-            webSocket = socket;
-            socketFinished = socketFinishedTcs;
-            _ = ListenForMessages(webSocket, onBeforeMessage);
+        void SendWebSocketMessageEvaluate(string method, string evaluateKey, object[] args) {
+            SendMessage(this, $"{{ \"{Operation.EvaluateScriptFunctionWithSerializedParams}\": \"{JsonEncodedText.Encode(method)}\", \"EvaluateKey\":\"{evaluateKey}\", \"Arguments\":{JsonSerializer.Serialize(args)} }}");
         }
     }
 }

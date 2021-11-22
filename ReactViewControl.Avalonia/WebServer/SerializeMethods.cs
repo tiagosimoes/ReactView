@@ -46,7 +46,7 @@ namespace ReactViewControl.WebServer {
 
         public static string SerializeObject(object obj) {
             var serializedObject = new SerializedObject(obj);
-            return JsonSerializer.Serialize(serializedObject, new JsonSerializerOptions { IncludeFields = true, WriteIndented = true});
+            return JsonSerializer.Serialize(serializedObject, new JsonSerializerOptions { IncludeFields = true, WriteIndented = false});
         }
 
         [Serializable]

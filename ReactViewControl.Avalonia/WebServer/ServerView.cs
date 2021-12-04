@@ -156,8 +156,8 @@ namespace ReactViewControl.WebServer {
             return Dispatcher.UIThread.CheckAccess() ? action() : Dispatcher.UIThread.InvokeAsync(action).Result;
         }
 
-        public Stream GetCustomResource(string path) {
-            return nativeAPI.ViewRender.GetCustomResource(path, out _);
+        public Stream GetCustomResource(string path, out string extension) {
+            return nativeAPI.ViewRender.GetCustomResource(path, out extension);
         }
 
         public void OpenURL(string url, bool inPopup = false) {

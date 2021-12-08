@@ -18,7 +18,6 @@ namespace Sample.Avalonia {
                 desktop.MainWindow = new MainWindow();
             }
             base.OnFrameworkInitializationCompleted();
-            ReactViewWebServer.ServerService.StartServer();
         }
 
 

@@ -1,12 +1,12 @@
 <Project>
   <PropertyGroup>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <FileVersion>2.0.0.0</FileVersion>
-    <Version>2.91.2</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.0</Version>
     <Authors>OutSystems</Authors>
     <Product>ReactView</Product>
     <Copyright>Copyright © OutSystems 2021</Copyright>
-    <PackageProjectUrl>https://github.com/OutSystems/ReactView</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/tiagosimoes/ReactViewWeb</PackageProjectUrl>
     <PackageOutputPath>$(MSBuildProjectDirectory)\..\nuget</PackageOutputPath>
     
     <!-- File with mtime of last successful npm install -->

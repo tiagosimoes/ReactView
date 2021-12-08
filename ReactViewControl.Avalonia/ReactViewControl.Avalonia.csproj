@@ -3,11 +3,11 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>ReactViewControl</RootNamespace>
-    <AssemblyTitle>ReactViewControl Avalonia</AssemblyTitle>
-    <Description>ReactViewControl for Avalonia powered by CefGlue</Description>
+    <AssemblyTitle>ReactViewControl WebServer</AssemblyTitle>
+    <Description>ReactViewControl for WebServer</Description>
     <Configuration></Configuration>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>ReactViewControl-Avalonia</PackageId>
+    <PackageId>ReactViewControl-WebServer</PackageId>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
     <Configurations>Debug;Release;ReleaseAvalonia;ReleaseWPF</Configurations>
   </PropertyGroup>
@@ -16,12 +16,7 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-      <OutputPath>..\..\PlatformMaster\ServiceStudio\Build\Debug_Hybrid</OutputPath>
-      <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-  </PropertyGroup>
-
-    <ItemGroup>
+  <ItemGroup>
     <Compile Include="..\ReactViewControl\EditCommands.cs" Link="EditCommands.cs" />
     <Compile Include="..\ReactViewControl\ExecutionEngine.cs" Link="ExecutionEngine.cs" />
     <Compile Include="..\ReactViewControl\ExtendedWebView.cs" Link="ExtendedWebView.cs" />

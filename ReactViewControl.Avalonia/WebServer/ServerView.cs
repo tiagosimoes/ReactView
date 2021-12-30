@@ -33,8 +33,8 @@ namespace ReactViewControl.WebServer {
             ResizePopup,
             ReturnValue,
             OpenURL,
+            OpenURLInNewTab,
             OpenURLInPopup,
-            OpenTooltip,
             OpenContextMenu,
             CloseWindow,
             MenuClicked
@@ -160,8 +160,16 @@ namespace ReactViewControl.WebServer {
             return nativeAPI.ViewRender.GetCustomResource(path, out extension);
         }
 
-        public void OpenURL(string url, bool inPopup = false) {
-            SendWebSocketMessage(inPopup? Operation.OpenURLInPopup: Operation.OpenURL, url);
+        public void OpenURLInPopup(string url) {
+            SendWebSocketMessage(Operation.OpenURLInPopup, url);
+        }
+
+        public void OpenURL(string url) {
+            SendWebSocketMessage(Operation.OpenURL, url);
+        }
+
+        public void OpenURLInNewTab(string url, bool inPopup = false) {
+            SendWebSocketMessage(Operation.OpenURLInNewTab, url);
         }
 
         private void SetPopupDimensions() {

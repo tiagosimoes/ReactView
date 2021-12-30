@@ -37,8 +37,8 @@ enum Operation {
     ResizePopup,
     ReturnValue,
     OpenURL,
+    OpenURLInNewTab,
     OpenURLInPopup,
-    OpenTooltip,
     OpenContextMenu,
     MenuClicked,
     CloseWindow
@@ -83,13 +83,15 @@ function onWebSocketMessageReceived(event) {
             returnValues[objectNameValue] = object.Arguments;
             break;
         case Operation[Operation.OpenURL]:
+            document.location = objectNameValue;
+            break;
+        case Operation[Operation.OpenURLInNewTab]:
             window.open(objectNameValue, "_blank")?.focus();
             break;
         case Operation[Operation.OpenContextMenu]:
             OpenMenu(JSON.parse(objectNameValue), hashCode => websocket.send(JSON.stringify({ "MenuClicked": hashCode })));
             break;
         case Operation[Operation.OpenURLInPopup]:
-        case Operation[Operation.OpenTooltip]:
             OpenURLInPopup(objectNameValue);
             break;
         default:

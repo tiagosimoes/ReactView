@@ -10,7 +10,7 @@ export async function setWebSocketsConnection() {
     var base = document.createElement('base');
     base.href = "/" + nativeAPIObjectName + "/";
     document.head.appendChild(base);
-    history.pushState("", "", "/");
+    history.replaceState("", "", "/");
     websocket = await new Promise<WebSocket>((resolve) => {
         if (document.location.protocol.startsWith("http")) {
             var docLocation = document.location;
@@ -96,7 +96,7 @@ function onWebSocketMessageReceived(event) {
             OpenURLInPopup(objectNameValue);
             break;
         case Operation[Operation.SetBrowserURL]:
-            history.pushState("", "", objectNameValue);
+            history.replaceState("", "", objectNameValue);
             break;
         default:
             throw "NotImplemented";

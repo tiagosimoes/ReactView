@@ -40,6 +40,7 @@ enum Operation {
     OpenURLInNewTab,
     OpenURLInPopup,
     OpenContextMenu,
+    SetBrowserURL,
     MenuClicked,
     CloseWindow
 }
@@ -93,6 +94,9 @@ function onWebSocketMessageReceived(event) {
             break;
         case Operation[Operation.OpenURLInPopup]:
             OpenURLInPopup(objectNameValue);
+            break;
+        case Operation[Operation.SetBrowserURL]:
+            history.pushState("", "", objectNameValue);
             break;
         default:
             throw "NotImplemented";

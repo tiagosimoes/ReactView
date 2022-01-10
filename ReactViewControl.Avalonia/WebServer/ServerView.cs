@@ -36,6 +36,7 @@ namespace ReactViewControl.WebServer {
             OpenURLInNewTab,
             OpenURLInPopup,
             OpenContextMenu,
+            SetBrowserURL,
             CloseWindow,
             MenuClicked
         }
@@ -170,6 +171,10 @@ namespace ReactViewControl.WebServer {
 
         public void OpenURLInNewTab(string url, bool inPopup = false) {
             SendWebSocketMessage(Operation.OpenURLInNewTab, url);
+        }
+
+        public void SetBrowserURL(string url) {
+            SendWebSocketMessage(Operation.SetBrowserURL, url);
         }
 
         private void SetPopupDimensions() {

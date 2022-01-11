@@ -2,9 +2,12 @@
 export function ResizePopup(windowSettings: object, onClose: Function = () => null ) {
     var ifrm = window.frameElement as HTMLFrameElement;
     var frameRoot = ifrm.contentDocument!.getElementById("webview_root");
-    var alreadyHasTitle = (ifrm.contentDocument!.body.childElementCount > 1);
+    var alreadyHasTitle = (ifrm.contentDocument!.querySelector("[draggable]") != null);
     var titleMinHeight = 36;
     if (frameRoot?.classList.contains("fit-content-width")) {
+        // these next 2 lines force a redraw, which is needed in some situations
+        frameRoot.style.display = "none";
+        frameRoot.style.display = "";
         windowSettings["Width"] = frameRoot?.scrollWidth;
     }
     if (frameRoot?.classList.contains("fit-content-height")) {
@@ -77,5 +80,5 @@ export function OpenURLInPopup(url) {
     ifrm.setAttribute("src", url);
     ifrm.focus();
     topDocument.body.appendChild(ifrm);
-    topDocument.body.style.cursor = "progress";
+    //topDocument.body.style.cursor = "progress";
 }

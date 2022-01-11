@@ -27,6 +27,8 @@ export async function setWebSocketsConnection() {
         websocket.onmessage = onWebSocketMessageReceived;
         websocket.onclose = () => window.close();
     }
+
+    offscreenCanvasPolyFillForFirefoxAndSafari();
 }
 
 enum Operation {
@@ -43,6 +45,29 @@ enum Operation {
     SetBrowserURL,
     MenuClicked,
     CloseWindow
+}
+
+function offscreenCanvasPolyFillForFirefoxAndSafari() {
+    if ((() => {
+        try { return (new OffscreenCanvas(0, 0)).getContext("2d"); }
+        catch { return null; }
+    })() == null) {
+        // @ts-ignore
+        window.OffscreenCanvas = class OffscreenCanvas {
+            constructor(width, height) {
+                var canvas = this["canvas"];
+                canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                canvas.convertToBlob = () => {
+                    return new Promise(resolve => {
+                        canvas.toBlob(resolve);
+                    });
+                };
+                return canvas;
+            }
+        };
+    }
 }
 
 function onWebSocketMessageReceived(event) {
@@ -78,7 +103,7 @@ function onWebSocketMessageReceived(event) {
         case Operation[Operation.ResizePopup]:
             setTimeout(() =>
                 ResizePopup(JSON.parse(objectNameValue), () => websocket.send(JSON.stringify({ "CloseWindow": true })))
-            , 200);
+            , 0);
             break;
         case Operation[Operation.ReturnValue]:
             returnValues[objectNameValue] = object.Arguments;

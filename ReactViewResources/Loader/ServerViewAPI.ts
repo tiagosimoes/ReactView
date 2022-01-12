@@ -170,6 +170,7 @@ function registerObject(registerObjectName: string, object: any) {
 
 function reloadIfClosedSocket() {
     if (websocket.readyState == WebSocket.CLOSED) {
+        window.top.document.body.style.cursor = "wait";
         window.top.location.reload();
     }
 }

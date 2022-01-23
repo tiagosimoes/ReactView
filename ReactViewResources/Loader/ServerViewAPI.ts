@@ -171,7 +171,9 @@ function registerObject(registerObjectName: string, object: any) {
 function reloadIfClosedSocket() {
     if (websocket.readyState == WebSocket.CLOSED) {
         var hasOpenModule = (/\/\w+$/).test(document.location.href);
-        document.body.innerHTML = "<div style='width:100%; text-align:center; line-height:100vh; cursor:wait'>Reloading" + (hasOpenModule? " auto-saved module":"")  + "...</div>"
+        var elem = document.createElement("div");
+        document.body.appendChild(elem);
+        elem.outerHTML = "<div style='position:fixed;top:0;bottom:0;left:0;right:0;cursor:wait;display:flex;align-items:center;justify-content:center;z-index: 2147483647;background: #ffffff4d;'><div style='font-size:14px;background:var(--body-background-color);padding: 50px 100px;border-radius: 11px;box-shadow: 1px 1px 10px var(--shadow-level-uniform-color1);'>Reloading" + (hasOpenModule ? " auto-saved module" : "") + "...</div></div>";
         window.top.location.reload();
     }
 }

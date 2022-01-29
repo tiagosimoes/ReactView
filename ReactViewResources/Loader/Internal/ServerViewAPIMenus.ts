@@ -30,7 +30,7 @@ export function OpenMenu(menus, onMenuClick: Function) {
     divMenu.style.border = "1px solid var(--line-divider-color);";
     divMenu.style.borderRadius = "2px";
     divMenu.style.background = "var(--body-background-color)";
-    divMenu.style.boxShadow = "2px 2px 4px var(--shadow-level-uniform-color1)";
+    divMenu.style.boxShadow = "2px 2px 8px var(--shadow-level-uniform-color1)";
     var menuClicked = (hashCode) => {
         enableMouseInteractions();
         document.querySelectorAll(".serverview_contextMenu").forEach(elem => document.body.removeChild(elem))
@@ -42,13 +42,25 @@ export function OpenMenu(menus, onMenuClick: Function) {
             subMenuItem = document.createElement("div");
             subMenuItem.dataset.Header = menuItem.Header;
             subMenuItem.textContent = menuItem.Header.replace("_", "");
-            subMenuItem.style.padding = "5px 10px";
+            subMenuItem.style.padding = "5px 20px";
             subMenuItem.style.color = menuItem.IsEnabled ? "var(--body-font-color)" : "var(--text-disabled-color)";
-            subMenuItem.onclick = () => menuItem.Items.length > 0 ? OpenMenu(menuItem.Items, onMenuClick) : menuClicked(menuItem.HashCode);
+            if (menuItem.Items.length > 0) {
+                var subMenuItemArrow = document.createElement("span");
+                subMenuItemArrow.textContent = "▶";
+                subMenuItemArrow.style.position = "absolute";
+                subMenuItemArrow.style.right = "5px";
+                subMenuItem.appendChild(subMenuItemArrow);
+                subMenuItem.onclick = () => {
+                    document.querySelectorAll(".serverview_contextMenu").forEach(elem => { if (elem != divMenu)  document.body.removeChild(elem);});
+                    OpenMenu(menuItem.Items, onMenuClick);
+                }
+            } else {
+                subMenuItem.onclick = () => menuClicked(menuItem.HashCode);
+            }
         } else {
             subMenuItem = document.createElement("hr"); /* separator */
             subMenuItem.style.border = "0px";
-            subMenuItem.style.borderTop = "1px solid var(--line-divider-color);";
+            subMenuItem.style.borderTop = "1px solid var(--line-divider-color)";
             subMenuItem.style.margin = "5px 0";
         }
         divMenu.appendChild(subMenuItem);

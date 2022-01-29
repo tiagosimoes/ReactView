@@ -5,6 +5,23 @@ var mouseX, mouseY;
 document.onmousemove = (event: PointerEvent) => { mouseX = event.clientX; mouseY = event.clientY };
 document.body.oncontextmenu = () => false;
 
+window.addEventListener("blur", () => {
+    //Remove browser native context menu from UI Editor. TODO TCS: This should later be done in UIEditor code itself
+    setTimeout(() => {
+        if (document.activeElement!.classList.contains("editor-canvas")) {
+            var canvas = document.activeElement!.shadowRoot?.querySelector(".canvas");
+            var UIEditorIframe = canvas?.shadowRoot?.querySelector("iframe")?.contentDocument;
+            if (UIEditorIframe != null) {
+                UIEditorIframe.oncontextmenu = () => false;
+                var UIContentIframe = UIEditorIframe?.querySelector("iframe")?.contentDocument;
+                if (UIContentIframe != null) {
+                    UIContentIframe.oncontextmenu = () => false;
+                }
+            }
+        }
+    });
+});
+
 export function OpenMenu(menus, onMenuClick: Function) {
     var divMenu = document.createElement("div");
     divMenu.classList.add("serverview_contextMenu");

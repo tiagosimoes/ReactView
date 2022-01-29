@@ -122,6 +122,7 @@ function onWebSocketMessageReceived(event) {
             break;
         case Operation[Operation.SetBrowserURL]:
             history.replaceState("", "", objectNameValue);
+            document.title = objectNameValue.match("[^\/]*$")[0];
             break;
         default:
             throw "NotImplemented";

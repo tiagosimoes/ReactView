@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using ReactViewControl.WebServer;
 using WebViewControl;
@@ -42,7 +43,7 @@ namespace ReactViewControl {
         private string mainFramNativeObjectName;
 
 
-        public ReactViewRender(ResourceUrl defaultStyleSheet, Func<IViewModule[]> initializePlugins, int maxNativeMethodsParallelCalls, bool enableDebugMode, Uri devServerUri = null) {
+        public ReactViewRender(ResourceUrl defaultStyleSheet, Func<IViewModule[]> initializePlugins, bool enableDebugMode, Uri devServerUri = null) {
             UserCallingAssembly = GetUserCallingMethod().ReflectedType.Assembly;
             ServerView = new ServerView();
             mainFramNativeObjectName = NativeAPI.Initialize(this);
@@ -137,7 +138,7 @@ namespace ReactViewControl {
 
         /// <summary>
         /// Handle external resource requests. 
-        /// Call <see cref="WebView.ResourceHandler.BeginAsyncResponse"/> to handle the request in an async way.
+        /// Call <see cref="ResourceHandler.BeginAsyncResponse"/> to handle the request in an async way.
         /// </summary>
         public event ResourceRequestedEventHandler ExternalResourceRequested;
 
@@ -518,15 +519,15 @@ namespace ReactViewControl {
         /// <param name="forceNativeSyncCalls"></param>
         private void RegisterNativeObject(IViewModule module, FrameInfo frame) {
             var nativeObjectName = module.GetNativeObjectFullName(frame.Name);
-            ServerView.RegisterWebJavaScriptObject(nativeObjectName, module.CreateNativeObject(), /*interceptCall*/ CallNativeMethod, /*executeCallsInUI*/ false);
+            ServerView.RegisterWebJavaScriptObject(nativeObjectName, module.CreateNativeObject(), /*interceptCall*/ CallNativeMethod);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object CallNativeMethod(Func<object> nativeMethod) {
+        private Task<object> CallNativeMethod(Func<object> nativeMethod) {
             if (Host != null) {
                 return Host.CallNativeMethod(nativeMethod);
             }
-            return nativeMethod();
+            return Task.FromResult(nativeMethod());
         }
 
         /// <summary>

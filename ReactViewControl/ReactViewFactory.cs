@@ -36,13 +36,6 @@ namespace ReactViewControl {
         /// </summary>
         public virtual Uri DevServerURI => null;
 
-        /// <summary>
-        /// Defines the number of simultaneous native methods calls from javascript allowed.
-        /// When 1, this will prevent reentrancy, ie, native calls will be executed sequentially and one at a time.
-        /// Defaults to int.MaxValue, calls will be executed in parallel and reentrancy can occur.
-        /// </summary>
-        public virtual int MaxNativeMethodsParallelCalls => int.MaxValue;
-
         public virtual bool RegisterWebJavaScriptObject(string name, object objectToBind, Func<Func<object>, object> interceptCall, bool executeCallsInUI = false) => false;
 
         public virtual void UnregisterWebJavaScriptObject(string name) {}

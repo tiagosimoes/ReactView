@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using WebViewControl;
 
 namespace ReactViewControl {
@@ -17,7 +18,7 @@ namespace ReactViewControl {
 
         private static ReactViewRender CreateReactViewInstance(ReactViewFactory factory) {
             ReactViewRender InnerCreateView() {
-                var view = new ReactViewRender(factory.DefaultStyleSheet, () => factory.InitializePlugins(), factory.MaxNativeMethodsParallelCalls, factory.EnableDebugMode, factory.DevServerURI);
+                var view = new ReactViewRender(factory.DefaultStyleSheet, () => factory.InitializePlugins(), factory.EnableDebugMode, factory.DevServerURI);
                 if (factory.ShowDeveloperTools) {
                     view.ShowDeveloperTools();
                 }
@@ -156,7 +157,7 @@ namespace ReactViewControl {
 
         /// <summary>
         /// Handle external resource requests. 
-        /// Call <see cref="WebView.ResourceHandler.BeginAsyncResponse"/> to handle the request in an async way.
+        /// Call <see cref="ResourceHandler.BeginAsyncResponse"/> to handle the request in an async way.
         /// </summary>
         public event ResourceRequestedEventHandler ExternalResourceRequested {
             add { View.ExternalResourceRequested += value; }
@@ -213,7 +214,7 @@ namespace ReactViewControl {
         /// <summary>
         /// Called when executing a native method.
         /// </summary>
-        protected virtual object OnNativeMethodCalled(Func<object> nativeMethod) => nativeMethod();
+        protected virtual Task<object> OnNativeMethodCalled(Func<object> nativeMethod) => Task.FromResult(nativeMethod());
 
         /// <summary>
         /// Called before executing/evaluating a JS method
@@ -223,6 +224,6 @@ namespace ReactViewControl {
         internal void HandledBeforeExecuteMethod() => OnBeforeExecuteMethod();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object CallNativeMethod(Func<object> nativeMethod) => OnNativeMethodCalled(nativeMethod);
+        internal Task<object> CallNativeMethod(Func<object> nativeMethod) => OnNativeMethodCalled(nativeMethod);
     }
 }

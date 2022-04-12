@@ -37,8 +37,8 @@
   </ItemGroup>
 
   <ItemGroup>
-      <PackageReference Include="System.Text.Json" Version="5.0.2" />
-      <PackageReference Include="WebViewControl-Avalonia" Version="2.91.7" />
+      <PackageReference Include="System.Text.Json" Version="6.0.1" />
+      <PackageReference Include="WebViewControl-Avalonia" Version="2.91.23" />
   </ItemGroup>
 
 

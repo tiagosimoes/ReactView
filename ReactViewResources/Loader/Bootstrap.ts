@@ -26,6 +26,76 @@ async function bootstrap() {
     loader.initialize(mainView);
 }
 
+function onWebSocketMessageReceived(event) {
+    var object = JSON.parse(event.data);
+    var objectName = Object.getOwnPropertyNames(object)[0]
+    var objectNameValue = object[objectName];
+    switch (objectName) {
+        case "RegisterObjectName":
+            registerObject(objectNameValue, object.Object);
+            break;
+        case "UnregisterObjectName":
+            throw "NotImplemented";
+        case "Execute":
+            execute(objectNameValue, object.Arguments)
+            break;
+        default:
+            throw "NotImplemented";
+    }
+}
+function execute(script, args) {
+    if (args != null) {
+        eval(script + "(" + JSON.stringify(args) + ")");
+    } else {
+        eval(script);
+    }
+} 
+
+function registerObject(registerObjectName: string, object: any) {
+    window[registerObjectName] = new Object() as any;
+    var windowObject = window[registerObjectName] as any;
+    object.methods.forEach(function (method) {
+        if (method["ReturnType"].ClassName != "System.Void") {
+            windowObject[lowerFirstLetter(method["MethodName"])] = async function (args) {
+                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: args };
+                return await sendMessage(JSON.stringify(methodCall));
+            }
+        } else {
+            windowObject[lowerFirstLetter(method["MethodName"])] = function (args) {
+                var methodCall = { ObjectName: registerObjectName, MethodName: method["MethodName"], Args: args };
+                window["websocket"].send(JSON.stringify(methodCall));
+            }
+        }
+    });
+}
+
+async function sendMessage(methodCall): Promise<object> {
+    return new Promise((resolve, reject) => {
+        var result = window["websocket"].send(JSON.stringify(methodCall));
+        setTimeout(() => resolve(result), 1000)
+    });
+}
+
+function lowerFirstLetter(string) {
+    return string.charAt(0).toLowerCase() + string.slice(1);
+}
+
+
+async function setWebSocketsConnection(): Promise<WebSocket> {
+    return new Promise<WebSocket>((resolve) => {
+        if (document.location.protocol.startsWith("http")) {
+            var docLocation = document.location;
+            var webSocketLocation = docLocation.protocol.replace("http", "ws") + "//" + docLocation.host + "/ws";
+            var webSocket = new WebSocket(webSocketLocation);
+            webSocket.onopen = function () {
+                resolve(webSocket);
+            }
+        } else {
+            resolve();
+        }
+    });
+}
+
 async function loadFramework(view: ViewMetadata): Promise<void> {
     const reactLib: string = "React";
     const reactDOMLib: string = "ReactDOM";
